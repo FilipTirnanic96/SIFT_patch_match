@@ -4,56 +4,51 @@ Created on Sun Mar 15 12:38:04 2020
 
 @author: Filip
 """
-
+import sys
+import os
+if '../' not in sys.path:
+    sys.path.append('../')
 import numpy as np
 import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
-import glob_def
-if __name__ == "__main__":
-    image_path = "./public/set/map.png"
-    rows = []
-    cols = []
-    image = np.array(Image.open(image_path).convert('L'))
-    #image = image[::2,1::2]
-    plt.imshow(image)
-    plt.show()
+from utils.common.glob_def import DATA_DIR
+from patch_matcher.simple_patch_matcher import SimplePatchMatcher
 
-    for num in np.arange(0,10):
-        patch_path = "./public/set/0/" + str(num) + ".png"
+def visualize_patch(template, patch, x, y, ph, pw):
+    template_copy = template.copy()
+    cv2.rectangle(template_copy, (x, y), (x + pw, y + ph), (255,0,0), 3)
+    plt.imshow(np.array(template_copy))
+    plt.show() 
+    plt.imshow(np.array(patch))
+    plt.show() 
+
+if __name__ == "__main__":
+    # get map template image
+    template_image_path = os.path.join(DATA_DIR,"set","map.png")
+    template = Image.open(template_image_path)
     
-        patch = np.array(Image.open(patch_path).convert('L'))/(255 * 40 * 40)
-        #patch = patch[::2,1::2]
-        pw = patch.shape[1]
-        pl = patch.shape[0]
-        plt.imshow(patch)
-        plt.show()
-        cv2.imshow("image",image)
-        #cv2.imshow("patch",patch)
-        cv2.waitKey(0)
-        #cv2.destroyAllWindows()
-        count1 = time.perf_counter()
-        L1_err =  255 * np.ones((image.shape[0] - pl, image.shape[1] - pw))
-        for i in np.arange(0, image.shape[0] - pw, 1): 
-            for j in np.arange(0, image.shape[1] - pl, 1):
-                L1_err[i,j] = np.sum(abs(image[i: i + pw, j: j+ pl] - patch))
-                #print(i,j)
-        count2 = time.perf_counter()       
-        print('Time passed', count2 - count1)
-        row, col = np.unravel_index(L1_err.argmin(), L1_err.shape)
+    # show template
+    plt.imshow(np.array(template))
+    plt.show()
+    
+    # initialise Simple Path Macher
+    patch_matcher_ = SimplePatchMatcher(template, 2)
+    # take first n patches
+    n_patches = 10
+    # cumulative time taken
+    t_cum = 0
+    for num in np.arange(0,n_patches):
+        # get patch image
+        path_image_path = os.path.join(DATA_DIR,"set","0",str(num) + ".png")
+        patch = Image.open(path_image_path)     
+        # match patch
+        x, y = patch_matcher_.match_patch(patch)
+        # get time taken
+        time_taken = patch_matcher_.time_passed_sec
+        # visu results
+        visualize_patch(np.array(template), np.array(patch), x, y, np.array(patch).shape[1], np.array(patch).shape[0])
+        t_cum += time_taken
         
-        
-        rows.append(row)      
-        cols.append(col)
-        if(num / 10 == 1):
-            print(num)
-        plt.imshow(image[row : row + pw, col : col + pl])
-        plt.show()
-        
-    for r, c in zip(rows,cols):
-        print(c, r)
-    
-    
-    
-    
+    print('Time taken to match',n_patches, 'patch', t_cum)
