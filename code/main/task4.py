@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import time
 from utils.common.glob_def import DATA_DIR
 from patch_matcher.simple_patch_matcher import SimplePatchMatcher
+from kpi_calculation.calculate_kpi import CalculateKPI 
 
 def visualize_patch(template, patch, x, y, ph, pw):
     template_copy = template.copy()
@@ -39,6 +40,9 @@ if __name__ == "__main__":
     n_patches = 10
     # cumulative time taken
     t_cum = 0
+    
+    kpi_ = CalculateKPI(DATA_DIR)
+    df_kpi = kpi_.calculate_kpis(-1, 10)
     for num in np.arange(0,n_patches):
         # get patch image
         path_image_path = os.path.join(DATA_DIR,"set","0",str(num) + ".png")
