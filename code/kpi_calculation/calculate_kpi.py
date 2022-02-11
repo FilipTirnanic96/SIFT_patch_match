@@ -9,17 +9,18 @@ from PIL import Image
 import numpy as np
 import time
 import pandas as pd
+from patch_matcher.simple_patch_matcher import PatchMatcher, SimplePatchMatcher
 
 class CalculateKPI:
     
     
-    def __init__(self, path_to_dataset):
+    def __init__(self, path_to_dataset: str, patch_matcher_: PatchMatcher):
         self.dataset_path = path_to_dataset
         self.path_to_input_txt_files = os.path.join(path_to_dataset, 'inputs')
         self.path_to_onput_txt_files = os.path.join(path_to_dataset, 'outputs')
         self.path_to_input_patches = os.path.join(path_to_dataset, 'set')
         # init patch matcher
-        # patch_matcher_ = PatchMatcher()
+        self.patch_matcher_ = patch_matcher_
         
     def calculate_kpis(self, num_files = -1, num_inputs = -1):
         # proces template image
@@ -51,6 +52,10 @@ class CalculateKPI:
                 ph = int(patch_size_str[0])
                 pw = int(patch_size_str[1])
                 
+                # if we have simple patch matcher we need to calculate new template features for different patch sizes
+                if(type(self.patch_matcher_) is SimplePatchMatcher):
+                    self.patch_matcher_ = SimplePatchMatcher(template, pw, ph)
+                    
                 # read path to each patch
                 path_to_patch = f.readline()
                 while path_to_patch:
@@ -67,8 +72,6 @@ class CalculateKPI:
                     
                     # make full path to patch
                     path_to_patch = os.path.join(self.path_to_input_patches, path_to_patch)
-                    # calculate time taken to match a patch
-                    time_start = time.time()
                     
                     # read patch
                     patch = Image.open(path_to_patch)
@@ -76,10 +79,8 @@ class CalculateKPI:
                     # patch_features = patch_matcher_.extract_features(patch)
                     patch_ = np.array(patch.convert('L'))
                     # match patch to template
-                    # [x_match, y_match] = patch_matcher_.match(template_features, patchfeatures)
-                    x_match = 0
-                    y_match = 0
-                    
+                    x_match, y_match = self.patch_matcher_.match_patch(patch)
+
                     # append x_match, y_match to list
                     kpi_list.append(x_match)
                     kpi_list.append(y_match)
@@ -98,13 +99,12 @@ class CalculateKPI:
                     if (abs(x_expected - x_match) <= 5 and abs(y_expected - y_match) <= 5):
                         matched = True
                     
-                    time_end = time.time()
                     
                     # append matched to list
                     kpi_list.append(matched)
                     
                     # append time taken to list
-                    kpi_list.append(round(1.0*(time_end - time_start), 4))
+                    kpi_list.append(self.patch_matcher_.time_passed_sec)
                     
                     # increment processed measurement
                     processed_inputs = processed_inputs + 1                    
