@@ -9,7 +9,7 @@ from PIL import Image
 import numpy as np
 import time
 import pandas as pd
-from patch_matcher.simple_patch_matcher import PatchMatcher, SimplePatchMatcher
+from patch_matcher.patch_matcher import PatchMatcher, SimplePatchMatcher
 
 class CalculateKPI:
     

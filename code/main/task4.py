@@ -14,7 +14,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import time
 from utils.common.glob_def import DATA_DIR
-from patch_matcher.simple_patch_matcher import SimplePatchMatcher
+from patch_matcher.patch_matcher import SimplePatchMatcher
 from kpi_calculation.calculate_kpi import CalculateKPI 
 
 def visualize_patch(template, patch, x, y, ph, pw):
