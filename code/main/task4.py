@@ -34,25 +34,31 @@ if __name__ == "__main__":
     plt.imshow(np.array(template))
     plt.show()
     
-    # initialise Simple Path Macher
-    patch_matcher_ = SimplePatchMatcher(template, 2)
     # take first n patches
     n_patches = 10
     # cumulative time taken
     t_cum = 0
-    
-    kpi_ = CalculateKPI(DATA_DIR)
-    df_kpi = kpi_.calculate_kpis(-1, 10)
+ 
+    # initialise Simple Path Macher
+    patch_matcher_ = SimplePatchMatcher(template, 40, 40, 2)
+    #kpi_ = CalculateKPI(DATA_DIR)
+    #df_kpi = kpi_.calculate_kpis(-1, 10)
     for num in np.arange(0,n_patches):
+        
         # get patch image
-        path_image_path = os.path.join(DATA_DIR,"set","0",str(num) + ".png")
+        path_image_path = os.path.join(DATA_DIR,"set","9",str(num) + ".png")
         patch = Image.open(path_image_path)     
-        # match patch
-        x, y = patch_matcher_.match_patch(patch)
+        
+        x1, y1 = patch_matcher_.match_patch(patch)
+
         # get time taken
         time_taken = patch_matcher_.time_passed_sec
+        
+       
         # visu results
-        visualize_patch(np.array(template), np.array(patch), x, y, np.array(patch).shape[1], np.array(patch).shape[0])
+        visualize_patch(np.array(template), np.array(patch), x1, y1, np.array(patch).shape[1], np.array(patch).shape[0])
+        
+        
         t_cum += time_taken
         
     print('Time taken to match',n_patches, 'patch', t_cum)
