@@ -6,14 +6,14 @@ Created on Sun Mar 15 12:38:04 2020
 """
 import sys
 import os
-if '../' not in sys.path:
-    sys.path.append('../')
+if './' not in sys.path:
+    sys.path.append('./')
 import numpy as np
 import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
-from utils.common.glob_def import DATA_DIR
+from utils.glob_def import DATA_DIR
 from patch_matcher.patch_matcher import SimplePatchMatcher, AdvancePatchMatcher
 from kpi_calculation.calculate_kpi import CalculateKPI 
 

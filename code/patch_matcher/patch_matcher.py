@@ -206,9 +206,11 @@ class SimplePatchMatcher(PatchMatcher):
    
     
     def __init__(self, template_img, pw, ph, verbose = 0):
+        # init parent constructor
         super().__init__(verbose)
         # preprocess image
         template_img = self.preprocess(template_img)
+        # init params
         self.template = template_img
         self.pw = pw
         self.ph = ph
