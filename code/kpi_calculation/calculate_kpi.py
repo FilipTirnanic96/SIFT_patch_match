@@ -78,6 +78,13 @@ class CalculateKPI:
                     # extract features from patch
                     # patch_features = patch_matcher_.extract_features(patch)
                     patch_ = np.array(patch.convert('L'))
+
+                    # read expected output
+                    expected_output = output_f.readline().split()
+                    x_expected = int(expected_output[0])
+                    y_expected = int(expected_output[1])
+                    self.patch_matcher_.expected_x =x_expected
+                    self.patch_matcher_.expected_y =y_expected
                     # match patch to template
                     x_match, y_match = self.patch_matcher_.match_patch(patch)
 
@@ -85,10 +92,7 @@ class CalculateKPI:
                     kpi_list.append(x_match)
                     kpi_list.append(y_match)
                     
-                    # read expected output
-                    expected_output = output_f.readline().split()
-                    x_expected = int(expected_output[0])
-                    y_expected = int(expected_output[1])
+
 
                     # append x_expected, y_expected to list
                     kpi_list.append(x_expected)
