@@ -31,7 +31,8 @@ class PatchMatcher(ABC):
     
     def __init__(self,verbose = 0):
         self.verbose = verbose
-        self.time_passed_sec = -1
+        self.time_passed_sec = -1      
+        self.n_points_matched = 0
         
     def preprocess(self, image):
         image = np.array(image.convert('L'))
@@ -117,12 +118,14 @@ class PatchMatcher(ABC):
         patch_key_points = self.extract_key_points(patch)        
         # check if we have detected some key points
         if(patch_key_points.size == 0):
+            self.n_points_matched = 0
             return 0, 0
         
         # extract key points from template
         patch_key_points, patch_features = self.extract_features(patch_key_points, patch)
         # check if we have detected some features
         if(patch_features.size == 0):
+            self.n_points_matched = 0
             return 0, 0
         
         # nomalize features
@@ -133,12 +136,19 @@ class PatchMatcher(ABC):
         match = self.match_features(patch_features, self.template_features)
         # check if we have matched some features
         if(match.size == 0):
+            self.n_points_matched = 0
             return 0, 0
         
-        show_matched_points(self.template, patch, self.template_key_points, patch_key_points, match)
         # find top left location on template of matched patch
-        x_left_top, y_left_top = self.find_correspodind_location_of_patch(patch_key_points, match)
+        x_left_top, y_left_top, match = self.find_correspodind_location_of_patch(patch_key_points, match)
+        #show_matched_points(self.template, patch, self.template_key_points, patch_key_points, match)
         
+        # set num of matched points
+        if match.size > 0:
+            self.n_points_matched = match.shape[0]
+        else:
+            self.n_points_matched = 0
+            
         end = time.time()
         self.time_passed_sec = round(1.0*(end - start), 4)
         if self.verbose > 0:
@@ -226,7 +236,7 @@ class SimplePatchMatcher(PatchMatcher):
         
         x_left_top = template_center_match[0] - math.floor(self.pw/2)
         y_left_top = template_center_match[1] - math.floor(self.ph/2)
-        return x_left_top, y_left_top
+        return x_left_top, y_left_top, match
  
     
       
@@ -351,11 +361,8 @@ class AdvancePatchMatcher(PatchMatcher):
         features = np.array(features)
         return key_points, features 
     
-        
-    def RANSAC_fit(pt1, pt2, match, maxIter, seedSetSize, maxInlierError, goodFitThresh):
-        return 0
     
-    def filter_outlayers(H, pt1, pt2, match, errorTreshold = 100):
+    def filter_outlayers(H, pt1, pt2, match, errorTreshold = 70):
         # transform top left corner of patch (coordinate 0,0)
         pt1_transform = np.matmul(pt1, H)
         dist = np.sqrt(np.sum((pt2 - pt1_transform)**2,1))
@@ -368,16 +375,7 @@ class AdvancePatchMatcher(PatchMatcher):
         pt1[:, 0:2] = patch_key_points[match[:,1],:]
         # extract matched key points from template
         pt2 = np.ones((len(match), 3))
-        pt2[:, 0:2] = self.template_key_points[match[:,0],:]
-        
-        # if we match just one point we just do translation
-        if(match.shape[0] == 1):
-            # translete 0,0 coordinate
-            result = pt2 - pt1
-            x_top_left = int(np.round(result[0, 0]))
-            y_top_left = int(np.round(result[0, 1]))
-            
-            return x_top_left, y_top_left
+        pt2 = self.template_key_points[match[:,0],:]
         
         # compute affine matrix
         H = AdvancePatchMatcher.compute_affine_matrix(pt1, pt2)
@@ -387,24 +385,14 @@ class AdvancePatchMatcher(PatchMatcher):
         
         # check if we filter out all matches
         if(match.size == 0):
-            return 0
+            return 0, 0, match
         
         # recompute afine matrix
         # extract matched key points from patch
         pt1 = np.ones((len(match), 3))
         pt1[:, 0:2] = patch_key_points[match[:,1],:]
         # extract matched key points from template
-        pt2 = np.ones((len(match), 3))
-        pt2[:, 0:2] = self.template_key_points[match[:,0],:]
-        
-        # if we match just one point after filtering we just do translation
-        if(match.shape[0] == 1):
-            # translete 0,0 coordinate
-            result = pt2 - pt1
-            x_top_left = int(np.round(result[0, 0]))
-            y_top_left = int(np.round(result[0, 1]))
-            
-            return x_top_left, y_top_left
+        pt2 = self.template_key_points[match[:,0],:]
         
         # compute affine matrix
         H = AdvancePatchMatcher.compute_affine_matrix(pt1, pt2)
@@ -414,17 +402,18 @@ class AdvancePatchMatcher(PatchMatcher):
         x_top_left = int(np.round(result[0, 0]))
         y_top_left = int(np.round(result[0, 1]))
         
-        return x_top_left, y_top_left
+        return x_top_left, y_top_left, match
     
     # we need to compute matrix H such as patchKP * H = templateKP
     def compute_affine_matrix(pt1, pt2):
-        # find affine matrix
-        H = np.linalg.lstsq(pt1, pt2, rcond=None)
-        # extract LS solution
-        H = H[0]
-        H[0,2] = 0
-        H[1,2] = 0
-        H[2,2] = 1     
+        # compute translation matrix
+        H = np.zeros((3,2))
+        residuals = pt2 - pt1[:,0:2]
+        mean_residuals = np.mean(residuals, axis = 0)
+        H[0,0] = 1
+        H[2,0] = mean_residuals[0]
+        H[1,1] = 1
+        H[2,1] = mean_residuals[1]
         
         return H
     

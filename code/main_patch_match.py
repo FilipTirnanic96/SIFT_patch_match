@@ -16,19 +16,16 @@ import time
 from utils.glob_def import DATA_DIR
 from patch_matcher.patch_matcher import SimplePatchMatcher, AdvancePatchMatcher
 from kpi_calculation.calculate_kpi import CalculateKPI 
+from patch_matcher.match_visualisation import visualise_match
 
 from IPython import get_ipython
-
+import pandas as pd
 
 if __name__ == "__main__":
     #get_ipython().run_line_magic('matplotlib', 'qt')
     # get map template image
     template_image_path = os.path.join(DATA_DIR,"set","map.png")
     template = Image.open(template_image_path)
-    
-    # show template
-    plt.imshow(np.array(template))
-    plt.show()
     
     
     # initialise Simple Path Macher
@@ -57,11 +54,21 @@ if __name__ == "__main__":
     print('Accuracy for n =',num_patches_to_process,'processed patches is', accuracy)
     print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
     '''
-    # init object for kpi cals
-    num_patches_to_process = 20
-    kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1)
-    df_kpi = kpi_.calculate_kpis(4, num_patches_to_process)
-    accuracy = (sum(df_kpi['matched'] == 1))/df_kpi.shape[0]
-    time_taken = sum(df_kpi['time'])
-    print('Accuracy for n =',num_patches_to_process,'processed patches is', accuracy)
-    print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
+    flag = False
+    if flag:
+        # init object for kpi cals
+        num_patches_to_process = 3000
+        kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1)
+        df_kpi = kpi_.calculate_kpis(5, num_patches_to_process)
+        accuracy = (sum(df_kpi['matched'] == 1))/df_kpi.shape[0]
+        time_taken = sum(df_kpi['time'])
+        print('Accuracy for n =',num_patches_to_process,'processed patches is', accuracy)
+        print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
+    else:
+        df_kpi = pd.read_csv('./df_kpi.csv')
+        num_visu = 30
+        df_kpi_false = df_kpi[df_kpi.matched == False]
+        df_kpi_false_ = df_kpi_false[df_kpi_false.n_points_matched != 0]
+        df_kpi_false_v = df_kpi_false_.iloc[:num_visu]
+        
+        visualise_match(template, 'advanced', df_kpi_false_v['path'])

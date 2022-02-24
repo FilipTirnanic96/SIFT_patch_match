@@ -90,6 +90,9 @@ class CalculateKPI:
                     kpi_list.append(x_expected)
                     kpi_list.append(y_expected)
                     
+                    # append num of matched points
+                    kpi_list.append(self.patch_matcher_.n_points_matched)
+                    
                     # check if we are in 120 neiborhood (6x6 pixels missed)
                     matched = False
                     if (abs(x_expected - x_match) <= 5 and abs(y_expected - y_match) <= 5):
@@ -133,5 +136,5 @@ class CalculateKPI:
             # close current output file
             output_f.close()
             
-        df_kpi = pd.DataFrame(kpis, columns = ['path','x_match', 'y_match', 'x_expected', 'y_expected', 'matched', 'time'])
+        df_kpi = pd.DataFrame(kpis, columns = ['path','x_match', 'y_match', 'x_expected', 'y_expected', 'n_points_matched','matched', 'time'])
         return df_kpi

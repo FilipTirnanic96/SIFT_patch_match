@@ -13,7 +13,7 @@ import numpy as np
 from patch_matcher.visualisation import show_matched_points
     
 # visualize match of patch and template
-def match_visualsation(template, patch_matcher_type, path_to_patches):
+def visualise_match(template, patch_matcher_type, path_to_patches):
     # original patch for visu
     org_template = np.array(template)
     
@@ -43,19 +43,27 @@ def match_visualsation(template, patch_matcher_type, path_to_patches):
         patch_key_points = patch_matcher.extract_key_points(patch)
         # check if we have detected some key points
         if(patch_key_points.size == 0):
-            return 0, 0
+            continue
         
         # extract features from patch key points
         patch_key_points, patch_features = patch_matcher.extract_features(patch_key_points, patch)
         # check if we have detected some features
         if(patch_features.size == 0):
-            return 0, 0
+            continue
         
         # nomalize features
         patch_features = patch_matcher.nomalize_features(patch_features)       
         # find feature matchs between patch and template
-        # debug
         match = patch_matcher.match_features(patch_features, patch_matcher.template_features)
+        if(match.size == 0):
+            continue 
         
+        # find top left location on template of matched patch
+        x_left_top, y_left_top, match = patch_matcher.find_correspodind_location_of_patch(patch_key_points, match)
+        if(match.size == 0):
+            continue
         
+        # show matched points
+        show_matched_points(org_template, org_patch, patch_matcher.template_key_points, patch_key_points, match)
+
     return 0
