@@ -19,13 +19,6 @@ from kpi_calculation.calculate_kpi import CalculateKPI
 
 from IPython import get_ipython
 
-def visualize_patch(template, patch, x, y, ph, pw):
-    template_copy = template.copy()
-    cv2.rectangle(template_copy, (x, y), (x + pw, y + ph), (255,0,0), 3)
-    plt.imshow(np.array(template_copy))
-    plt.show() 
-    plt.imshow(np.array(patch))
-    plt.show() 
 
 if __name__ == "__main__":
     #get_ipython().run_line_magic('matplotlib', 'qt')
@@ -65,7 +58,7 @@ if __name__ == "__main__":
     print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
     '''
     # init object for kpi cals
-    num_patches_to_process = 3000
+    num_patches_to_process = 20
     kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1)
     df_kpi = kpi_.calculate_kpis(4, num_patches_to_process)
     accuracy = (sum(df_kpi['matched'] == 1))/df_kpi.shape[0]

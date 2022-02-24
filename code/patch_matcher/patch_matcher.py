@@ -9,9 +9,8 @@ import time
 from abc import ABC, abstractmethod
 import math
 from scipy import signal, ndimage
-import cv2
 import scipy.ndimage.filters as filters
-
+from patch_matcher.visualisation import show_matched_points
 import matplotlib.pyplot as plt
 
 def debug_image(image):
@@ -26,60 +25,7 @@ def debug_image_grad_image(image, th = 0.01):
     image_copy /= image_copy.max()
     plt.imshow(image_copy, cmap='gray', vmin=0, vmax=1)
     plt.show()
-    
-def show_key_points(image, key_points):
-    image_copy = image.copy()
-    ps = 1
-    for i in np.arange(0, key_points.shape[0]):
-        # get key point location
-        x, y  = key_points[i]
-        image_copy[y-ps:y+ps,x-ps:x+ps] = 0
-        #image_copy[y,x] = 0
-    plt.imshow(image_copy, cmap='gray', vmin=0, vmax=255)
-    plt.show()
-
-    
-def show_matched_points(template, patch, tKP, pKP, match):
-    # extract matched key points from patch
-    pt1 = pKP[match[:,1],:]
-    # extract matched key points from template
-    pt2 = tKP[match[:,0],:]
-    
-    # blank space between template img and patch img
-    blank_space = 20
-    merged_pic = 255 * np.ones((template.shape[0], template.shape[1] + patch.shape[1] + blank_space))
-    
-    # offset of patch
-    offset_x = template.shape[1] + blank_space
-    offset_y = int(np.round(template.shape[0]/2))
-    
-    
-    # merge images
-    merged_pic[0:template.shape[0], 0:template.shape[1]] = template
-    merged_pic[offset_y:offset_y + patch.shape[0], offset_x:offset_x + patch.shape[1]] = patch
-
-    # add offset to patch coordiantes
-    pt1[:,0] += offset_x
-    pt1[:,1] += offset_y
-    
-    plt.figure()
-    # draw lines and key points
-    for i in np.arange(0, pt1.shape[0]):
-        # draw key point for template and patch
-        xt, yt = pt2[i]
-        xp, yp = pt1[i]
-        # draw line 
-        color = 0 
-        thickness = 1
-        merged_pic = cv2.line(merged_pic, (xt, yt), (xp, yp), color, thickness)
-    
-    plt.imshow(merged_pic, cmap='gray', vmin=0, vmax=255)
-    plt.show()
-
-
-
-    
-    
+  
     
 class PatchMatcher(ABC):
     
@@ -189,7 +135,7 @@ class PatchMatcher(ABC):
         if(match.size == 0):
             return 0, 0
         
-        #show_matched_points(self.template, patch, self.template_key_points, patch_key_points, match)
+        show_matched_points(self.template, patch, self.template_key_points, patch_key_points, match)
         # find top left location on template of matched patch
         x_left_top, y_left_top = self.find_correspodind_location_of_patch(patch_key_points, match)
         
@@ -356,10 +302,9 @@ class AdvancePatchMatcher(PatchMatcher):
         key_points_indeces = np.where(R > 0)
         key_points_list = [(key_points_indeces[1][i], key_points_indeces[0][i]) for i in np.arange(0, key_points_indeces[0].shape[0])]
         
-        #debug_image_grad_image(self.grad_mag)
         
         key_points = np.array(key_points_list)
-        #show_key_points(image, key_points)
+        
         return key_points
     
     def compute_gradient_histogram(self, num_bins, gradient_magnitudes, gradient_angles):

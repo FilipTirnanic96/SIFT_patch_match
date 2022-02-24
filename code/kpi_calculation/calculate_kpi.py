@@ -7,7 +7,6 @@ Created on Tue Feb  8 13:44:17 2022
 import os
 from PIL import Image
 import numpy as np
-import time
 import pandas as pd
 from patch_matcher.patch_matcher import PatchMatcher, SimplePatchMatcher
 
@@ -26,9 +25,7 @@ class CalculateKPI:
         # proces template image
         template_image_path = os.path.join(self.dataset_path,"set","map.png")
         template = Image.open(template_image_path)
-        # extract features for template
-        # template_features = patch_matcher_.extract_features(template_features)
-        template_ = np.array(template.convert('L'))
+
         # init params
         processed_files = 0
         processed_inputs = 0
@@ -61,23 +58,19 @@ class CalculateKPI:
                 while path_to_patch:
                     # init kpi list for current patch 
                     kpi_list = []
+                    
                     # take relative path from dataset path
                     path_to_patch = path_to_patch.split('/')
                     path_to_patch = os.path.join(path_to_patch[1], path_to_patch[2])
                     # delete new line read from input
-                    path_to_patch = path_to_patch[:-1]
-                    
+                    path_to_patch = path_to_patch[:-1]                  
                     # append relative to list
-                    kpi_list.append(path_to_patch)
-                    
+                    kpi_list.append(path_to_patch)                    
                     # make full path to patch
                     path_to_patch = os.path.join(self.path_to_input_patches, path_to_patch)
                     
                     # read patch
                     patch = Image.open(path_to_patch)
-                    # extract features from patch
-                    # patch_features = patch_matcher_.extract_features(patch)
-                    patch_ = np.array(patch.convert('L'))
 
                     # read expected output
                     expected_output = output_f.readline().split()
@@ -85,14 +78,13 @@ class CalculateKPI:
                     y_expected = int(expected_output[1])
                     self.patch_matcher_.expected_x =x_expected
                     self.patch_matcher_.expected_y =y_expected
+                    
                     # match patch to template
                     x_match, y_match = self.patch_matcher_.match_patch(patch)
 
                     # append x_match, y_match to list
                     kpi_list.append(x_match)
                     kpi_list.append(y_match)
-                    
-
 
                     # append x_expected, y_expected to list
                     kpi_list.append(x_expected)
