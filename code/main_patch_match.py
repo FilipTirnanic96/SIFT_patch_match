@@ -6,8 +6,6 @@ Created on Sun Mar 15 12:38:04 2020
 """
 import sys
 import os
-if './' not in sys.path:
-    sys.path.append('./')
 import numpy as np
 import cv2
 from PIL import Image
@@ -54,21 +52,25 @@ if __name__ == "__main__":
     print('Accuracy for n =',num_patches_to_process,'processed patches is', accuracy)
     print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
     '''
-    flag = False
-    if flag:
+    flag = 1
+    if flag == 1:
         # init object for kpi cals
-        num_patches_to_process = 3000
+        num_patches_to_process = 5000
+        num_files = 9
         kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1)
-        df_kpi = kpi_.calculate_kpis(5, num_patches_to_process)
+        df_kpi = kpi_.calculate_kpis(num_files, num_patches_to_process)
         accuracy = (sum(df_kpi['matched'] == 1))/df_kpi.shape[0]
         time_taken = sum(df_kpi['time'])
         print('Accuracy for n =',num_patches_to_process,'processed patches is', accuracy)
         print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
-    else:
+    elif flag == 2:
         df_kpi = pd.read_csv('./df_kpi.csv')
-        num_visu = 30
+        num_visu = 20
         df_kpi_false = df_kpi[df_kpi.matched == False]
         df_kpi_false_ = df_kpi_false[df_kpi_false.n_points_matched != 0]
-        df_kpi_false_v = df_kpi_false_.iloc[:num_visu]
+        df_kpi_false_['folder'] = df_kpi_false_['path'].str.slice(0,1)
+        df_kpi_false_v = df_kpi_false_.iloc[-num_visu:]
         
-        visualise_match(template, 'advanced', df_kpi_false_v['path'])
+        visualise_match(template, 'advanced', df_kpi_false_['path'], df_kpi_false_)
+    else:
+        patch_matcher_1 = AdvancePatchMatcher(template)

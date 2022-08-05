@@ -18,7 +18,7 @@ def show_key_points(image, key_points):
     # plot keypoints
     plt.figure()
     thickness = -1
-    radius = 2
+    radius = 1
     if picture2d:
         color = 0 
     else:

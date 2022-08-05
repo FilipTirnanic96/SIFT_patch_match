@@ -12,6 +12,7 @@ from scipy import signal, ndimage
 import scipy.ndimage.filters as filters
 from patch_matcher.visualisation import show_matched_points
 import matplotlib.pyplot as plt
+from patch_matcher.visualisation import show_key_points
 
 def debug_image(image):
     image_copy = image.copy().astype('float64')
@@ -70,8 +71,8 @@ class PatchMatcher(ABC):
         
     def match_features(self, patch_features, template_features):
         match = []
-        nn_treshold = 0.4
-        treshold = 0.001        
+        nn_treshold = 0.7
+        treshold = 0.1     
         # match features
         for i in np.arange(0, patch_features.shape[0]):
             patch_feature =  patch_features[i]
@@ -112,8 +113,10 @@ class PatchMatcher(ABC):
         start = time.time()
             
          # preprocess image
+        self.curr_image = np.array(patch) / 255
         patch = self.preprocess(patch)
-
+       
+        
         # extract key points from template
         patch_key_points = self.extract_key_points(patch)        
         # check if we have detected some key points
@@ -253,8 +256,10 @@ class AdvancePatchMatcher(PatchMatcher):
         self.expected_y = -1
         
         # preprocess image
+        self.curr_image = np.array(template_img) / 255
         template_img = self.preprocess(template_img)
         self.template = template_img
+        
         # extract key points from template
         self.template_key_points = self.extract_key_points(self.template)
         # extract template features
@@ -274,6 +279,11 @@ class AdvancePatchMatcher(PatchMatcher):
         # % gradients in y direction.
         img_dy = 1.0*signal.convolve2d(image, np.reshape(np.array([-1, 0, 1]), (-1,1)), mode='same', boundary = 'symm')/255 
         
+        # anulate invalid features
+        if image.size > 20000:
+            img_dx[:,0:3] = 0
+            img_dy[img_dy.shape[0] - 3:img_dy.shape[0],:] = 0
+
         # calculate gradient angle
         self.grad_theta = np.arctan2(img_dy, img_dx) 
         # map gradient from 0 - 2* pi
@@ -302,9 +312,12 @@ class AdvancePatchMatcher(PatchMatcher):
         # calculate response for Harris Corner equation
         k = 0.05
         R = detA - k*(traceA**2)
-        # find key points where R > threshold
-        threshold = 0.0001*R.max()
-        R[R < threshold] = 0
+
+        threshold2 = 1e-10
+        threshold1 = 1e-10
+        R[(R < threshold1) & (R > threshold2)] = 0
+
+        R = abs(R)
         # non maxima supresion
         R_max = filters.maximum_filter(R, size = 3)
         R[R != R_max] = 0
@@ -314,7 +327,7 @@ class AdvancePatchMatcher(PatchMatcher):
         
         
         key_points = np.array(key_points_list)
-        
+        #show_key_points(image, key_points)
         return key_points
     
     def compute_gradient_histogram(self, num_bins, gradient_magnitudes, gradient_angles):
@@ -330,31 +343,53 @@ class AdvancePatchMatcher(PatchMatcher):
            histogram[indices[i]] +=  gradient_magnitudes_ravel[i]
         
         return histogram
+    
+    def compute_gradient_feature(self, num_bins, gradient_magnitudes, gradient_angles):
+        feature = np.zeros((gradient_magnitudes.size*2))
+        grad_x = gradient_magnitudes.ravel() * np.cos(gradient_angles.ravel())
+        gray_y = gradient_magnitudes.ravel() * np.sin(gradient_angles.ravel())
         
+        feature[0:gradient_magnitudes.size] = grad_x
+        feature[gradient_magnitudes.size:gradient_magnitudes.size*2] = gray_y
+        return feature
+     
+    def compute_gray_value_feature(self, patch):
+        feature = patch.ravel()
+
+        return feature
+    
+    def compute_color_histogram_feature(self, patch):
+        feature = patch.ravel()
+        return feature
     #
     def extract_features(self, key_points, image):
         features = []
         patch_size = 3
+        patch_step = math.floor(patch_size/2)
         num_angles = 8
         key_points_flag = np.ones((key_points.shape[0]), dtype=bool)
         for i in np.arange(0, key_points.shape[0]):
             # get key point location
             x, y  = key_points[i]
             # get patch around key point
-            min_y = y - math.floor(patch_size/2)
-            max_y = y + math.floor(patch_size/2) + 1
-            min_x = x- math.floor(patch_size/2)
-            max_x = x + math.floor(patch_size/2) + 1
+            min_y = y - patch_step
+            max_y = y + patch_step + 1
+            min_x = x - patch_step
+            max_x = x + patch_step + 1
+
             # if patch out of bounds skip key point
             if((min_y < 0) or (max_y > image.shape[0]) or (min_x < 0) or (max_x > image.shape[1])):
                 key_points_flag[i] = 0
                 continue
-
+            
             patch_grad = self.grad_mag[ min_y: max_y, min_x: max_x]
             patch_theta = self.grad_theta[ min_y: max_y, min_x: max_x]
             
+            patch = self.curr_image[ min_y: max_y, min_x: max_x]
             feature = self.compute_gradient_histogram(num_angles, patch_grad, patch_theta)
-
+            #feature = self.compute_gradient_feature(num_angles, patch_grad, patch_theta)
+            #feature = self.compute_color_histogram_feature(patch)
+            
             features.append(feature) 
         
         key_points = key_points[key_points_flag,:]
@@ -366,7 +401,9 @@ class AdvancePatchMatcher(PatchMatcher):
         # transform top left corner of patch (coordinate 0,0)
         pt1_transform = np.matmul(pt1, H)
         dist = np.sqrt(np.sum((pt2 - pt1_transform)**2,1))
-        match = match[dist < errorTreshold]
+        dist_std = np.std(dist)
+        errorTreshold = 3* dist_std
+        match = match[dist <= errorTreshold]
         return match
     
     def find_correspodind_location_of_patch(self, patch_key_points, match):
