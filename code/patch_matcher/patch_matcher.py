@@ -50,6 +50,8 @@ class PatchMatcher(ABC):
         self.time_passed_sec = -1
         self.n_points_matched = 0
 
+
+
     def preprocess(self, image):
         image = np.array(image.convert('L'))
         return image

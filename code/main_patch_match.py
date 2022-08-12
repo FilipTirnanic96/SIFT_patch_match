@@ -18,8 +18,11 @@ from patch_matcher.match_visualisation import visualise_match
 
 from IPython import get_ipython
 import pandas as pd
+import yaml
 
 if __name__ == "__main__":
+
+
     #get_ipython().run_line_magic('matplotlib', 'qt')
     # get map template image
     template_image_path = os.path.join(DATA_DIR,"set","map.png")
