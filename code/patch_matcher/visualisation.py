@@ -34,7 +34,7 @@ def show_key_points(image, key_points):
     else:
         plt.imshow(image_copy, vmin=0, vmax=255)
     
-    plt.show()
+    #plt.show()
     
 def show_matched_points(template, patch, tKP, pKP, match):
     # flag if pic are 2d or 3d

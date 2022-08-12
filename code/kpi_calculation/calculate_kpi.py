@@ -35,7 +35,7 @@ class CalculateKPI:
         # excided num inputs flag
         excided_num_inputs = False
 
-        skip_data = 8
+        skip_data = 6
         sdk_curr = 0
         # read each txt file
         for txt_file in os.listdir(self.path_to_input_txt_files):
@@ -103,7 +103,7 @@ class CalculateKPI:
 
                     # check if we are in 120 neiborhood (6x6 pixels missed)
                     matched = False
-                    if (abs(x_expected - x_match) <= 5 and abs(y_expected - y_match) <= 5):
+                    if (abs(x_expected - x_match) <= 12 and abs(y_expected - y_match) <= 12):
                         matched = True
 
                     # append matched to list

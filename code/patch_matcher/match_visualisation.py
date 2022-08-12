@@ -11,7 +11,8 @@ from utils.glob_def import DATA_DIR
 from PIL import Image
 import numpy as np
 from patch_matcher.visualisation import show_matched_points, show_key_points
-    
+import pandas as pd
+
 # visualize match of patch and template
 def visualise_match(template, patch_matcher_type, path_to_patches, df):
     # original patch for visu
