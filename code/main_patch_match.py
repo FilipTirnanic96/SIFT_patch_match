@@ -55,15 +55,14 @@ if __name__ == "__main__":
     '''
     flag = 1
     if flag == 1:
-        # init object for kpi cals
-        num_patches_to_process = 5000
-        num_files = 6
+        file_name = 6
         kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1)
-        df_kpi = kpi_.calculate_kpis(num_files, num_patches_to_process)
+        df_kpi = kpi_.calculate_kpis(file_name)
         accuracy = (sum(df_kpi['matched'] == 1))/df_kpi.shape[0]
         time_taken = sum(df_kpi['time'])
-        print('Accuracy for n =',num_patches_to_process,'processed patches is', accuracy)
-        print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
+        num_patches_to_process = df_kpi.shape[0]
+        print('Accuracy for n =', num_patches_to_process,'processed patches is', accuracy)
+        print('Time taken for n =', num_patches_to_process,'processed patches is', time_taken)
         df_kpi.to_csv("./df_kpi_6.csv")
     elif flag == 2:
         df_kpi = pd.read_csv('./df_kpi_8.csv')

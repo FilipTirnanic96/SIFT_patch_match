@@ -233,7 +233,7 @@ class SimplePatchMatcher(PatchMatcher):
 
     # override abstract method
     # every point in image is key point
-    # returns x,y keypoints location
+    # returns x,y key points location
     def extract_key_points(self, image):
         key_points_list = []
         for y in range(math.floor(self.ph / 2), image.shape[0] - math.floor(self.ph / 2) + 1):
