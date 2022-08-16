@@ -11,7 +11,7 @@ import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
-from utils.glob_def import DATA_DIR
+from utils.glob_def import DATA_DIR, CONFIG_DIR
 from patch_matcher.patch_matcher import SimplePatchMatcher, AdvancePatchMatcher
 from kpi_calculation.calculate_kpi import CalculateKPI 
 from patch_matcher.match_visualisation import visualise_match
@@ -21,8 +21,6 @@ import pandas as pd
 import yaml
 
 if __name__ == "__main__":
-
-
     #get_ipython().run_line_magic('matplotlib', 'qt')
     # get map template image
     template_image_path = os.path.join(DATA_DIR,"set","map.png")
@@ -32,7 +30,7 @@ if __name__ == "__main__":
     # initialise Simple Path Macher
     time_s = time.time()
     patch_matcher_1 = AdvancePatchMatcher(template)
-    passt1 =  time.time() - time_s
+    passt1 = time.time() - time_s
     print(passt1)
     # take first n patches
     n_patches = 10
@@ -59,14 +57,14 @@ if __name__ == "__main__":
     if flag == 1:
         # init object for kpi cals
         num_patches_to_process = 5000
-        num_files = 7
+        num_files = 6
         kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1)
         df_kpi = kpi_.calculate_kpis(num_files, num_patches_to_process)
         accuracy = (sum(df_kpi['matched'] == 1))/df_kpi.shape[0]
         time_taken = sum(df_kpi['time'])
         print('Accuracy for n =',num_patches_to_process,'processed patches is', accuracy)
         print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
-        df_kpi.to_csv("./df_kpi_8.csv")
+        df_kpi.to_csv("./df_kpi_6.csv")
     elif flag == 2:
         df_kpi = pd.read_csv('./df_kpi_8.csv')
         num_visu = 20
