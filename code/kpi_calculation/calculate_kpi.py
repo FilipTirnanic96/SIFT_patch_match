@@ -9,6 +9,7 @@ from PIL import Image
 import numpy as np
 import pandas as pd
 from patch_matcher.patch_matcher import PatchMatcher, SimplePatchMatcher
+from kpi_calculation.report import Report
 
 
 class CalculateKPI:
@@ -20,6 +21,36 @@ class CalculateKPI:
         self.path_to_input_patches = os.path.join(path_to_dataset, 'set')
         # init patch matcher
         self.patch_matcher_ = patch_matcher_
+        # init report
+        self.report = Report()
+
+    def calculate_kpis_from_inputs(self, file_names_number: list):
+        if len(file_names_number) == 0:
+            return
+
+        cumulative_matched = 0
+        cumulative_num_patches = 0
+        cumulative_time = 0
+        for file_name_number in file_names_number:
+            df_kpi = self.calculate_kpis(file_name_number)
+
+            num_patches_to_process = df_kpi.shape[0]
+            accuracy = (sum(df_kpi['matched'] == 1)) / num_patches_to_process
+            time_taken = sum(df_kpi['time'])
+
+            print('Accuracy for n =', num_patches_to_process, 'processed patches is', accuracy)
+            print('Time taken for n =', num_patches_to_process, 'processed patches is', time_taken)
+
+            cumulative_matched += sum(df_kpi['matched'] == 1)
+            cumulative_num_patches += num_patches_to_process
+            cumulative_time += time_taken
+
+        if len(file_names_number) > 1:
+            cumulative_accuracy = cumulative_matched / cumulative_num_patches
+            print('Overall Accuracy for n =', cumulative_num_patches, 'processed patches is', cumulative_accuracy)
+            print('Overall time taken for n =', cumulative_num_patches, 'processed patches is', cumulative_accuracy)
+
+        return
 
     def calculate_kpis(self, file_name_number: int = -1):
         # process template image
@@ -40,6 +71,9 @@ class CalculateKPI:
 
             # open ground truth file
             output_f = open(os.path.join(self.path_to_output_txt_files, txt_file), 'r')
+
+            # init kpi for current file
+            kpis_file = []
 
             # open current input.txt file
             with open(os.path.join(self.path_to_input_txt_files, txt_file), 'r') as f:
@@ -108,14 +142,25 @@ class CalculateKPI:
                     # store kpi_list to list of all kpis
                     kpis.append(kpi_list)
 
+                    # store kpi_list to list of current file kpis
+                    kpis_file.append(kpi_list)
+
                     # read new patch path
                     path_to_patch = f.readline()
 
+            df_kpi_file = pd.DataFrame(kpis_file,
+                                  columns=['path', 'x_match', 'y_match', 'x_expected', 'y_expected', 'n_points_matched',
+                                           'matched', 'time'])
+
+            self.report.make_report(df_kpi_file, txt_file)
             # close current output file
             output_f.close()
 
         df_kpi = pd.DataFrame(kpis, columns=['path', 'x_match', 'y_match', 'x_expected', 'y_expected', 'n_points_matched',
                                        'matched', 'time'])
 
-        # generate report
+        if file_name_number == -1:
+            self.report.make_report(df_kpi, "all_data.txt")
+
+        # return report
         return df_kpi
