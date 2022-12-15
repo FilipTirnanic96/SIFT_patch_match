@@ -15,6 +15,27 @@ def compute_gradient_histogram(num_bins, gradient_magnitudes, gradient_angles):
     return histogram
 
 
+def weight_gradient_histogram(histogram, coefficient):
+    #  find max index
+    max_index = np.argmax(histogram)
+    mult = coefficient
+    i = max_index + 1
+    count = 1
+    while i < len(histogram):
+        histogram[i] *= mult
+        mult *= coefficient
+        i += 1
+
+    i = max_index - 1
+    mult = coefficient
+    while i > 0:
+        histogram[i] *= mult
+        mult *= coefficient
+        i -= 1
+
+    return histogram
+
+
 def compute_gradient_feature(gradient_magnitudes, gradient_angles):
     feature = np.zeros((gradient_magnitudes.size * 2))
     grad_x = gradient_magnitudes.ravel() * np.cos(gradient_angles.ravel())

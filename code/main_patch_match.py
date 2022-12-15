@@ -55,18 +55,17 @@ if __name__ == "__main__":
     '''
     flag = 1
     if flag == 1:
-        file_names = [7]
-        kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1)
+        model_name = "adv_pm_3_ch_median_filter"
+        file_names = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        #file_names = [8]
+        kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1, model_name)
         df_kpi = kpi_.calculate_kpis_from_inputs(file_names)
 
     elif flag == 2:
-        df_kpi = pd.read_csv('./df_kpi_8.csv')
+        df_kpi = pd.read_csv(r'C:\Users\uic52421\Documents\Python Scripts\PSIML\patch_match\code\reports\adv_pm_3_ch_new_median_filter\7.txt_n_points_matched_miss_1_less.csv')
         num_visu = 20
-        df_kpi_false = df_kpi[df_kpi.matched == False]
-        df_kpi_false_ = df_kpi_false[df_kpi_false.n_points_matched != 0]
-        df_kpi_false_['folder'] = df_kpi_false_['path'].str.slice(0,1)
-        df_kpi_false_v = df_kpi_false_.iloc[-num_visu:]
+        df_kpi = df_kpi.iloc[:num_visu]
         
-        visualise_match(template, 'advanced', df_kpi_false_['path'], df_kpi_false_)
+        visualise_match(template, 'advanced', df_kpi['path'], df_kpi)
     else:
         patch_matcher_1 = AdvancePatchMatcher(template)

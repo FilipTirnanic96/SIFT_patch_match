@@ -1,13 +1,21 @@
 patch_matcher:
 
   feature_normalization:
-    use_gaussian_norm: True
-    use_global_norm: True
+    use_gaussian_norm: False
+    use_global_norm: False
+    scaling_norm: False
 
   match:
-    nn_threshold: 0.7 # threshold for nearest neighbour match
+    nn_threshold: 0.6 # threshold for nearest neighbour match
 
 advanced_patch_matcher:
+
+  blur_image:
+    gauss_blur: False
+    gaussian_sigma: 0.6
+    gaussian_truncate: 2
+
+  skip_key_points : True
 
   feature_extraction:
     use_3_channels: True # use all 3 channels for feature extraction
@@ -15,8 +23,12 @@ advanced_patch_matcher:
       use_sum_feature: True # sum all features instead of concatenating them
     gradient_histogram:
       num_angle_bins: 8 # number of angle bins used for gradient histogram
+      weight_coefficient: 1
 
   match:
     filters:
       use_match_median_filter: True # use median filter to filter matched outliers
-      use_match_gauss_filter: True # use gaussian filter to filter outliers
+      median_filter_dist: 60
+      median_filter_min_pts: 3
+      use_match_gauss_filter: False # use gaussian filter to filter outliers
+      gauss_filter_min_pts: 3

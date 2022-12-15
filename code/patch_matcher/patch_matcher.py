@@ -5,7 +5,7 @@ Created on Fri Feb  4 14:17:03 2022
 @author: uic52421
 """
 import os
-
+import sys
 import numpy as np
 import time
 from abc import ABC, abstractmethod
@@ -15,11 +15,11 @@ import scipy.ndimage.filters as filters
 # from patch_matcher.visualisation import show_matched_points
 import matplotlib.pyplot as plt
 
-from patch_matcher.feature_extraction import compute_gradient_histogram
+from patch_matcher.feature_extraction import compute_gradient_histogram, weight_gradient_histogram
 from patch_matcher.visualisation import show_key_points
 from utils.glob_def import CONFIG_DIR
 import yaml
-
+from patch_matcher.patch_matcher_utility import *
 
 def debug_image(image):
     image_copy = image.copy().astype('float64')
@@ -52,16 +52,16 @@ class PatchMatcher(ABC):
         # params
         self.__load_params_from_config(self.config)
 
-        # use scaling: BAD for distinguishing vectors!
-        self.use_scaling_norm = False
-
         self.verbose = verbose
         self.time_passed_sec = -1
         self.n_points_matched = 0
+        self.match_dist = []
 
     def __load_params_from_config(self, config):
         # normalizing features
+        self.use_scaling_norm = config['patch_matcher']['feature_normalization']['scaling_norm']
         # use gaussian normalization
+
         self.use_gauss_norm = config['patch_matcher']['feature_normalization']['use_gaussian_norm']
         self.use_gauss_global_norm = config['patch_matcher']['feature_normalization']['use_global_norm']
         if self.use_gauss_global_norm:
@@ -74,22 +74,6 @@ class PatchMatcher(ABC):
     def preprocess(self, image):
         image = np.array(image.convert('L'))
         return image
-
-    @staticmethod
-    def first_and_second_smallest(numbers):
-        m1 = m2 = float('inf')
-        i1 = i2 = -1
-        for i, x in enumerate(numbers):
-            if x <= m1:
-                m2 = m1
-                m1 = x
-                i2 = i1
-                i1 = i
-
-            elif x < m2:
-                m2 = x
-                i2 = i
-        return m1, i1, m2, i2
 
     @abstractmethod
     def extract_key_points(self, image):
@@ -104,7 +88,7 @@ class PatchMatcher(ABC):
         if self.use_gauss_norm:
             # mean and std
             features -= np.mean(features, axis=1, keepdims=True)
-            features /= np.std(features, axis=1, keepdims=True)
+            features /= (np.std(features, axis=1, keepdims=True) + sys.float_info.epsilon)
 
         if self.use_gauss_global_norm:
             # mean and std
@@ -121,6 +105,7 @@ class PatchMatcher(ABC):
 
     def match_features(self, patch_features, template_features):
         match = []
+        self.match_dist = []
         nn_threshold = self.nn_threshold
         # match features
         for i in np.arange(0, patch_features.shape[0]):
@@ -128,29 +113,19 @@ class PatchMatcher(ABC):
 
             # calculate dist from ith path_feature to each template_feature
             distance = np.sqrt(np.sum((template_features - patch_feature) ** 2, axis=1))
-            m1, i1, m2, i2 = PatchMatcher.first_and_second_smallest(distance)
+            m1, i1, m2, i2 = first_and_second_smallest(distance)
             # if we have just 1 feature we won't use threshold
             if patch_features.shape[0] != 1:
-                if m1 / m2 < nn_threshold:
+                distance = m1 / (m2 + sys.float_info.epsilon)
+                if distance < nn_threshold:
                     match.append((i1, i))
+                    self.match_dist.append(distance)
             else:
                 match.append((i1, i))
+                self.match_dist.append(m1 / m2)
 
         match = np.array(match)
         return match
-
-    # debug
-    def match_features_debug(self, patch_features, template_features, pkp, tkp):
-
-        condition = (tkp[:, 0] <= self.expected_x + 40) & (tkp[:, 0] >= self.expected_x) & (
-                tkp[:, 1] >= self.expected_y) & (tkp[:, 1] <= self.expected_y + 40)
-        template_features1 = template_features[condition]
-
-        pkp[:, 0] += self.expected_x
-        pkp[:, 1] += self.expected_y
-        tkp1 = tkp[condition]
-
-        i = 0
 
     @abstractmethod
     def find_corresponding_location_of_patch(self, patch_key_points, match):
@@ -270,7 +245,7 @@ class SimplePatchMatcher(PatchMatcher):
 
             # calculate dist from ith path_feature to each template_feature
             distance = np.sqrt(np.sum((template_features - patch_feature) ** 2, axis=1))
-            m1, i1, m2, i2 = PatchMatcher.first_and_second_smallest(distance)
+            m1, i1, m2, i2 = first_and_second_smallest(distance)
 
             match.append((i1, i))
 
@@ -309,7 +284,7 @@ class AdvancePatchMatcher(PatchMatcher):
         self.curr_image = np.array(template_img) / 255
         template_img = self.preprocess(template_img)
         self.template = template_img
-
+        #self.template = ndimage.gaussian_filter(self.template, sigma=0.6, truncate=2)
         # extract key points from template
         self.template_key_points = self.extract_key_points(self.template)
         # extract template features
@@ -326,10 +301,17 @@ class AdvancePatchMatcher(PatchMatcher):
     def __load_params_from_config(self, config):
 
         advanced_pm_params = config['advanced_patch_matcher']
+
+        self.skip_key_points = advanced_pm_params['skip_key_points']
+        # <IMAGE PROCESSING PARAMS>
+        blur_image_config = advanced_pm_params['blur_image']
+
+        self.gaussian_blur_image = blur_image_config['gauss_blur']
+        self.gaussian_sigma = blur_image_config['gaussian_sigma']
+        self.gaussian_truncate = blur_image_config['gaussian_truncate']
         # <FEATURE PARAMS>
         # use all 3 channels for features
         feature_extraction_params = advanced_pm_params['feature_extraction']
-
         self.use_3_channels = feature_extraction_params['use_3_channels']
         self.use_sum_feature = feature_extraction_params['3_channels']['use_sum_feature']
 
@@ -340,12 +322,16 @@ class AdvancePatchMatcher(PatchMatcher):
 
         # gradient histogram
         self.num_angle_bins = feature_extraction_params['gradient_histogram']['num_angle_bins']
-
+        self.weight_coefficient = feature_extraction_params['gradient_histogram']['weight_coefficient']
         # <MATCHING PARAMS>
         # filtering outlier matches
         match_params = advanced_pm_params['match']
         self.use_match_median_filter = match_params['filters']['use_match_median_filter']
+        self.median_filter_dist = match_params['filters']['median_filter_dist']
+        self.median_filter_min_pts = match_params['filters']['median_filter_min_pts']
+
         self.use_match_gauss_filter = match_params['filters']['use_match_gauss_filter']
+        self.gauss_filter_min_pts = match_params['filters']['gauss_filter_min_pts']
 
     # override abstract method
     # use Harris detector to extract corner points
@@ -356,6 +342,9 @@ class AdvancePatchMatcher(PatchMatcher):
         if self.use_3_channels:
             self.channels_grad_mag.clear()
             self.channels_grad_theta.clear()
+
+            if self.gaussian_blur_image:
+                self.curr_image = ndimage.gaussian_filter(self.curr_image, sigma=self.gaussian_sigma, truncate=self.gaussian_truncate)
 
             # calculate gradients magnitude and orientation for each channel
             for channel in [0, 1, 2]:
@@ -381,6 +370,8 @@ class AdvancePatchMatcher(PatchMatcher):
                 self.channels_grad_mag.append(channel_grad_mag)
                 self.channels_grad_theta.append(channel_grad_theta)
 
+        if self.gaussian_blur_image:
+            image = ndimage.gaussian_filter(image, sigma=self.gaussian_sigma, truncate=self.gaussian_truncate)
         # find image gradients
         # % gradient image, for gradients in x direction.
         img_dx = 1.0 * signal.convolve2d(image, np.reshape(np.array([-1, 0, 1]), (1, -1)), mode='same',
@@ -391,7 +382,7 @@ class AdvancePatchMatcher(PatchMatcher):
 
         # anulate invalid features
         if image.size > 20000:
-            img_dx[:, 0:3] = 0
+            img_dx[:, 0:8] = 0
             img_dy[img_dy.shape[0] - 3:img_dy.shape[0], :] = 0
 
         # calculate gradient angle
@@ -434,10 +425,8 @@ class AdvancePatchMatcher(PatchMatcher):
 
         R[R != R_max] = 0
 
-        # debug_image(R)
-        if image.size < 20000:
-            th = 1e-5
-            R[R < th] = 0
+        th = 1e-6
+        R[R < th] = 0
 
         # debug_image(R)
         # debug_image_grad_image(R)
@@ -447,7 +436,7 @@ class AdvancePatchMatcher(PatchMatcher):
                            np.arange(0, key_points_indeces[0].shape[0])]
 
         key_points = np.array(key_points_list)
-        # show_key_points(image, key_points)
+        #show_key_points(image, key_points)
 
         return key_points
 
@@ -467,10 +456,20 @@ class AdvancePatchMatcher(PatchMatcher):
             min_x = x - patch_step
             max_x = x + patch_step + 1
 
-            # if patch out of bounds skip key point
-            if (min_y < 0) or (max_y > image.shape[0]) or (min_x < 0) or (max_x > image.shape[1]):
-                key_points_flag[i] = 0
-                continue
+            if self.skip_key_points:
+                # if patch out of bounds skip key point
+                if (min_y < 0) or (max_y > image.shape[0]) or (min_x < 0) or (max_x > image.shape[1]):
+                    key_points_flag[i] = 0
+                    continue
+            else:
+                if min_y < 0:
+                    min_y = 0
+                if max_y > image.shape[0]:
+                    max_y = image.shape[0]
+                if min_x < 0:
+                    min_x = 0
+                if max_x > image.shape[1]:
+                    max_x = image.shape[1]
 
             if self.use_3_channels:
                 feature = []
@@ -482,7 +481,6 @@ class AdvancePatchMatcher(PatchMatcher):
                     channel_patch_theta = channel_grad_theta[min_y: max_y, min_x: max_x]
                     channel_feature = compute_gradient_histogram(num_angles, channel_patch_grad,
                                                                  channel_patch_theta)
-
                     if self.use_sum_feature:
                         if len(feature) == 0:
                             feature = channel_feature
@@ -493,6 +491,7 @@ class AdvancePatchMatcher(PatchMatcher):
                             feature = channel_feature
                         else:
                             np.concatenate(feature, channel_feature, axis=0)
+
             else:
                 patch_grad = self.grad_mag[min_y: max_y, min_x: max_x]
                 patch_theta = self.grad_theta[min_y: max_y, min_x: max_x]
@@ -501,57 +500,47 @@ class AdvancePatchMatcher(PatchMatcher):
                 feature = compute_gradient_histogram(num_angles, patch_grad, patch_theta)
                 # feature = self.compute_gradient_feature(num_angles, patch_grad, patch_theta)
                 # feature = self.compute_color_histogram_feature(patch)
-
+            feature = weight_gradient_histogram(feature, self.weight_coefficient)
             features.append(feature)
 
         key_points = key_points[key_points_flag, :]
         features = np.array(features)
         return key_points, features
 
-    @staticmethod
-    def filter_outliers(H, pt1, pt2, match):
-        # transform top left corner of patch (coordinate 0,0)
-        pt1_transform = np.matmul(pt1, H)
-        dist = np.sqrt(np.sum((pt2 - pt1_transform) ** 2, 1))
-        dist_std = np.std(dist)
-        error_threshold = 3 * dist_std
-        match = match[dist <= error_threshold]
-        return match
-
     def find_corresponding_location_of_patch(self, patch_key_points, match):
+        # find index of best representative feature
+        best_match = np.array([match[np.argmin(self.match_dist), :]])
+
         # extract matched key points from patch
         pt1 = np.ones((len(match), 3))
         pt1[:, 0:2] = patch_key_points[match[:, 1], :]
         # extract matched key points from template
-        pt2 = np.ones((len(match), 3))
         pt2 = self.template_key_points[match[:, 0], :]
 
-        if self.use_match_median_filter:
+        if self.use_match_gauss_filter:
             # compute affine matrix
-            H = AdvancePatchMatcher.compute_affine_matrix(pt1, pt2)
+            H = compute_affine_matrix(pt1, pt2)
             # filter outliers
-            match = AdvancePatchMatcher.filter_outliers(H, pt1, pt2, match)
+            match = gauss_filter(H, pt1, pt2, match, self.gauss_filter_min_pts)
             # check if we filter out all matches
             if match.size == 0:
-                return 0, 0, match
+                # set match to best feature match
+                match = best_match
 
-        if self.use_match_gauss_filter:
+        if self.use_match_median_filter:
             # extract matched key points from patch
             pt1 = np.ones((len(match), 3))
             pt1[:, 0:2] = patch_key_points[match[:, 1], :]
             # extract matched key points from template
-            pt2 = np.ones((len(match), 3))
             pt2 = self.template_key_points[match[:, 0], :]
             # use median filter
-            match = AdvancePatchMatcher.median_filter(pt1, pt2, match, 60)
+            match = median_filter(pt1, pt2, match, self.median_filter_dist, self.median_filter_min_pts)
 
             # check if we filter out all matches
             if match.size == 0:
-                return 0, 0, match
+                # set match to best feature match
+                match = best_match
 
-        # check if we filter out all matches
-        if match.size == 0:
-            return 0, 0, match
         # recompute affine matrix
         # extract matched key points from patch
         pt1 = np.ones((len(match), 3))
@@ -560,7 +549,7 @@ class AdvancePatchMatcher(PatchMatcher):
         pt2 = self.template_key_points[match[:, 0], :]
 
         # compute affine matrix
-        H = AdvancePatchMatcher.compute_affine_matrix(pt1, pt2)
+        H = compute_affine_matrix(pt1, pt2)
 
         # transform top left corner of patch (coordinate 0,0)
         result = np.matmul(np.array([0, 0, 1], ndmin=2), H)
@@ -569,35 +558,3 @@ class AdvancePatchMatcher(PatchMatcher):
 
         return x_top_left, y_top_left, match
 
-    @staticmethod
-    # filter array with median
-    def median_filter(pt1, pt2, match, th):
-        # if we have more then 4 matched points use median filter
-        # calculate residuals
-        pts = pt2 - pt1[:, 0:2]
-        inds = np.ones(pts.shape[0], dtype=bool)
-        if pts.shape[0] > 4:
-            for i in [0, 1]:
-                pt = pts[:, i]
-                median = np.median(pt)
-                res = abs(pt - median)
-                ind = np.where(res > th)
-                inds[ind] = 0
-
-            match = match[inds, :]
-        return match
-
-    @staticmethod
-    # we need to compute matrix H such as patchKP * H = templateKP
-    def compute_affine_matrix(pt1, pt2):
-        # compute translation matrix
-        H = np.zeros((3, 2))
-        residuals = pt2 - pt1[:, 0:2]
-
-        mean_residuals = np.mean(residuals, axis=0)
-        H[0, 0] = 1
-        H[2, 0] = mean_residuals[0]
-        H[1, 1] = 1
-        H[2, 1] = mean_residuals[1]
-
-        return H

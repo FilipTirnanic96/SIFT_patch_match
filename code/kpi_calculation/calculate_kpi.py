@@ -14,7 +14,7 @@ from kpi_calculation.report import Report
 
 class CalculateKPI:
 
-    def __init__(self, path_to_dataset: str, patch_matcher_: PatchMatcher):
+    def __init__(self, path_to_dataset: str, patch_matcher_: PatchMatcher, model_name: str = "adv_pm"):
         self.dataset_path = path_to_dataset
         self.path_to_input_txt_files = os.path.join(path_to_dataset, 'inputs')
         self.path_to_output_txt_files = os.path.join(path_to_dataset, 'outputs')
@@ -22,7 +22,7 @@ class CalculateKPI:
         # init patch matcher
         self.patch_matcher_ = patch_matcher_
         # init report
-        self.report = Report()
+        self.report = Report(model_name)
 
     def calculate_kpis_from_inputs(self, file_names_number: list):
         if len(file_names_number) == 0:
@@ -130,7 +130,7 @@ class CalculateKPI:
 
                     # check if we are in 120 neighborhood (6x6 pixels missed)
                     matched = False
-                    if abs(x_expected - x_match) <= 12 and abs(y_expected - y_match) <= 12:
+                    if abs(x_expected - x_match) <= 20 and abs(y_expected - y_match) <= 20:
                         matched = True
 
                     # append matched to list
