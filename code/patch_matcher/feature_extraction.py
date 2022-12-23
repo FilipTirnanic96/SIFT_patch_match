@@ -16,11 +16,14 @@ def compute_gradient_histogram(num_bins, gradient_magnitudes, gradient_angles):
 
 
 def weight_gradient_histogram(histogram, coefficient):
+    if coefficient >= 1 or coefficient < 0:
+        return histogram
+
     #  find max index
     max_index = np.argmax(histogram)
     mult = coefficient
     i = max_index + 1
-    count = 1
+
     while i < len(histogram):
         histogram[i] *= mult
         mult *= coefficient

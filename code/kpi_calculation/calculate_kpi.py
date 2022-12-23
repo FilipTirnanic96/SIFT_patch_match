@@ -8,7 +8,8 @@ import os
 from PIL import Image
 import numpy as np
 import pandas as pd
-from patch_matcher.patch_matcher import PatchMatcher, SimplePatchMatcher
+from patch_matcher.patch_matcher import PatchMatcher
+from patch_matcher.simple_patch_matcher import SimplePatchMatcher
 from kpi_calculation.report import Report
 
 
@@ -37,9 +38,21 @@ class CalculateKPI:
             num_patches_to_process = df_kpi.shape[0]
             accuracy = (sum(df_kpi['matched'] == 1)) / num_patches_to_process
             time_taken = sum(df_kpi['time'])
+            time_taken1 = sum(df_kpi['time_extract_kp'])
+            time_taken2 = sum(df_kpi['time_extract_feat'])
+            time_taken3 = sum(df_kpi['time_extract_match'])
+            time_taken4 = sum(df_kpi['time_extract_loc'])
 
-            print('Accuracy for n =', num_patches_to_process, 'processed patches is', accuracy)
-            print('Time taken for n =', num_patches_to_process, 'processed patches is', time_taken)
+            print('Accuracy for filename', file_name_number, '.txt for n =', num_patches_to_process, 'processed patches is', accuracy)
+            print('Time taken for filename', file_name_number, '.txt for n =', num_patches_to_process, 'processed patches is', time_taken)
+            '''print('Time time_extract_kp taken for filename', file_name_number, '.txt for n =', num_patches_to_process,
+                  'processed patches is', time_taken1)
+            print('Time  time_extract_feat taken for filename', file_name_number, '.txt for n =', num_patches_to_process,
+                  'processed patches is', time_taken2)
+            print('Time time_extract_match taken for filename', file_name_number, '.txt for n =', num_patches_to_process,
+                  'processed patches is', time_taken3)
+            print('Time time_extract_loc taken for filename', file_name_number, '.txt for n =', num_patches_to_process,
+                  'processed patches is', time_taken4)'''
 
             cumulative_matched += sum(df_kpi['matched'] == 1)
             cumulative_num_patches += num_patches_to_process
@@ -47,8 +60,9 @@ class CalculateKPI:
 
         if len(file_names_number) > 1:
             cumulative_accuracy = cumulative_matched / cumulative_num_patches
+            cumulative_time = cumulative_time / cumulative_num_patches
             print('Overall Accuracy for n =', cumulative_num_patches, 'processed patches is', cumulative_accuracy)
-            print('Overall time taken for n =', cumulative_num_patches, 'processed patches is', cumulative_accuracy)
+            print('Overall avg time taken for n =', cumulative_num_patches, 'processed patches is', cumulative_time)
 
         return
 
@@ -138,7 +152,10 @@ class CalculateKPI:
 
                     # append time taken to list
                     kpi_list.append(self.patch_matcher_.time_passed_sec)
-
+                    kpi_list.append(self.patch_matcher_.time_passed_sec_extract_kp)
+                    kpi_list.append(self.patch_matcher_.time_passed_sec_extract_feat)
+                    kpi_list.append(self.patch_matcher_.time_passed_sec_match)
+                    kpi_list.append(self.patch_matcher_.time_passed_sec_loc)
                     # store kpi_list to list of all kpis
                     kpis.append(kpi_list)
 
@@ -150,14 +167,14 @@ class CalculateKPI:
 
             df_kpi_file = pd.DataFrame(kpis_file,
                                   columns=['path', 'x_match', 'y_match', 'x_expected', 'y_expected', 'n_points_matched',
-                                           'matched', 'time'])
+                                           'matched', 'time', 'time_extract_kp', 'time_extract_feat', 'time_extract_match', 'time_extract_loc'])
 
             self.report.make_report(df_kpi_file, txt_file)
             # close current output file
             output_f.close()
 
         df_kpi = pd.DataFrame(kpis, columns=['path', 'x_match', 'y_match', 'x_expected', 'y_expected', 'n_points_matched',
-                                       'matched', 'time'])
+                                       'matched', 'time', 'time_extract_kp', 'time_extract_feat', 'time_extract_match', 'time_extract_loc'])
 
         if file_name_number == -1:
             self.report.make_report(df_kpi, "all_data.txt")

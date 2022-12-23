@@ -33,27 +33,41 @@ class Report:
         plt.savefig(os.path.join(output_dir, input_name + '_det_stat.png'))
         # get all miss detections
         # bar plot number of miss detections and n_points_matched
+        if df.shape[0] > 0:
+            number_of_n_points_matched = df['n_points_matched'].value_counts()
+            number_of_n_points_matched = number_of_n_points_matched.sort_index()
+            plt.figure(figsize=(10, 8))
+            plt.title("Number of matched points in " + str(df.shape[0]) + " data")
+            ax = number_of_n_points_matched.plot.bar()
+            ax.bar_label(ax.containers[0])
+
+            plt.savefig(os.path.join(output_dir, input_name + '_n_points_matched.png'))
+
+        # get all miss detections
+        # bar plot number of miss detections and n_points_matched
         miss_detection_df = df[df['matched'] == False]
-        number_of_n_points_matched = miss_detection_df['n_points_matched'].value_counts()
-        number_of_n_points_matched = number_of_n_points_matched.sort_index()
-        plt.figure(figsize=(10, 8))
-        plt.title("Number of matched points in " + str(miss_detection_df.shape[0]) + " miss detections")
-        ax = number_of_n_points_matched.plot.bar()
-        ax.bar_label(ax.containers[0])
+        if miss_detection_df.shape[0] > 0:
+            number_of_n_points_matched = miss_detection_df['n_points_matched'].value_counts()
+            number_of_n_points_matched = number_of_n_points_matched.sort_index()
+            plt.figure(figsize=(10, 8))
+            plt.title("Number of matched points in " + str(miss_detection_df.shape[0]) + " miss detections")
+            ax = number_of_n_points_matched.plot.bar()
+            ax.bar_label(ax.containers[0])
 
-        plt.savefig(os.path.join(output_dir, input_name + '_n_points_matched_miss.png'))
+            plt.savefig(os.path.join(output_dir, input_name + '_n_points_matched_miss.png'))
 
-        # save miss detections df with n_points_matched > 1
-        miss_detection_df_1_greater = miss_detection_df[miss_detection_df['n_points_matched'] > 1]
-        miss_detection_df_1_greater.to_csv(os.path.join(output_dir, input_name + '_n_points_matched_miss_1_greater.csv'))
+            # save miss detections df with n_points_matched > 1
+            miss_detection_df_1_greater = miss_detection_df[miss_detection_df['n_points_matched'] > 1]
+            miss_detection_df_1_greater.to_csv(os.path.join(output_dir, input_name + '_n_points_matched_miss_1_greater.csv'))
 
-        miss_detection_df_1_less = miss_detection_df[miss_detection_df['n_points_matched'] <= 1]
-        miss_detection_df_1_less.to_csv(os.path.join(output_dir, input_name + '_n_points_matched_miss_1_less.csv'))
+            miss_detection_df_1_less = miss_detection_df[miss_detection_df['n_points_matched'] <= 1]
+            miss_detection_df_1_less.to_csv(os.path.join(output_dir, input_name + '_n_points_matched_miss_1_less.csv'))
 
         # save algo parameters
         shutil.copyfile(os.path.join(CONFIG_DIR, "patch_match_cfg.yml"),
                         os.path.join(output_dir, "patch_match_cfg.yml"))
 
+        plt.close()
 
 if __name__ == "__main__":
 

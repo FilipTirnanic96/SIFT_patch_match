@@ -4,21 +4,15 @@ Created on Sun Mar 15 12:38:04 2020
 
 @author: Filip
 """
-import sys
 import os
-import numpy as np
-import cv2
 from PIL import Image
-import matplotlib.pyplot as plt
 import time
-from utils.glob_def import DATA_DIR, CONFIG_DIR
-from patch_matcher.patch_matcher import SimplePatchMatcher, AdvancePatchMatcher
+from utils.glob_def import DATA_DIR
+from patch_matcher.advance_patch_matcher import AdvancePatchMatcher
 from kpi_calculation.calculate_kpi import CalculateKPI 
-from patch_matcher.match_visualisation import visualise_match
+from pach_match_visualisation.match_visualisation import visualise_match
 
-from IPython import get_ipython
 import pandas as pd
-import yaml
 
 if __name__ == "__main__":
     #get_ipython().run_line_magic('matplotlib', 'qt')
@@ -55,15 +49,16 @@ if __name__ == "__main__":
     '''
     flag = 1
     if flag == 1:
-        model_name = "adv_pm_3_ch_median_filter"
-        file_names = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        #file_names = [8]
+        model_name = "adv_pm_3_ch_ransac_public"
+        file_names = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        #file_names = [9]
         kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1, model_name)
         df_kpi = kpi_.calculate_kpis_from_inputs(file_names)
 
     elif flag == 2:
-        df_kpi = pd.read_csv(r'C:\Users\uic52421\Documents\Python Scripts\PSIML\patch_match\code\reports\adv_pm_3_ch_new_median_filter\7.txt_n_points_matched_miss_1_less.csv')
-        num_visu = 20
+        df_kpi = pd.read_csv(r'C:\Users\uic52421\Documents\Python Scripts\PSIML\patch_match\code\reports\adv_pm_3_ch_ransac_private_new\9.txt_n_points_matched_miss_1_less.csv')
+        #df_kpi = df_kpi[df_kpi.n_points_matched >= 1]
+        num_visu = 30
         df_kpi = df_kpi.iloc[:num_visu]
         
         visualise_match(template, 'advanced', df_kpi['path'], df_kpi)

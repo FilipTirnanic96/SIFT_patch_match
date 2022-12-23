@@ -7,14 +7,12 @@ Created on Thu Feb 24 12:43:31 2022
 
 import os
 
-from scipy import ndimage
-
-from patch_matcher.patch_matcher import SimplePatchMatcher, AdvancePatchMatcher
+from patch_matcher.simple_patch_matcher import SimplePatchMatcher
+from patch_matcher.advance_patch_matcher import AdvancePatchMatcher
 from utils.glob_def import DATA_DIR
 from PIL import Image
 import numpy as np
-from patch_matcher.visualisation import show_matched_points, show_key_points
-import pandas as pd
+from pach_match_visualisation.visualisation import show_matched_points, show_key_points
 
 
 # visualize match of patch and template
@@ -63,12 +61,10 @@ def visualise_match(template, patch_matcher_type, path_to_patches, df):
         # get expected patch grad and theta img from template
         x_expected = df.iloc[i]['x_expected']
         y_expected = df.iloc[i]['y_expected']
-        t_patch_grad = template_grad[y_expected: y_expected + patch.shape[0], x_expected: x_expected + patch.shape[1]]
-        t_patch_theta = template_theta[y_expected: y_expected + patch.shape[0], x_expected: x_expected + patch.shape[1]]
 
         org_patch_ = org_template[y_expected: y_expected + patch.shape[0], x_expected: x_expected + patch.shape[1], :]
-        show_key_points(org_patch_, np.array([]))
         # check if we have detected some key points
+        #show_key_points(org_patch, np.array([]))
         if patch_key_points.size == 0:
             print("No key points 1")
             continue

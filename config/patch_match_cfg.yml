@@ -6,29 +6,23 @@ patch_matcher:
     scaling_norm: False
 
   match:
-    nn_threshold: 0.6 # threshold for nearest neighbour match
+    nn_threshold: 0.7 # threshold for nearest neighbour match
 
 advanced_patch_matcher:
 
-  blur_image:
-    gauss_blur: False
-    gaussian_sigma: 0.6
-    gaussian_truncate: 2
-
-  skip_key_points : True
+  patch_size: 7
+  n_max_points_corners_template: 1800
+  n_max_points_edges_template: 200
+  n_max_points_corners_patch: 8
+  n_max_points_edges_patch: 4
 
   feature_extraction:
     use_3_channels: True # use all 3 channels for feature extraction
-    3_channels:
-      use_sum_feature: True # sum all features instead of concatenating them
     gradient_histogram:
       num_angle_bins: 8 # number of angle bins used for gradient histogram
       weight_coefficient: 1
 
   match:
+    two_point_max_diff: 40
     filters:
-      use_match_median_filter: True # use median filter to filter matched outliers
-      median_filter_dist: 60
-      median_filter_min_pts: 3
-      use_match_gauss_filter: False # use gaussian filter to filter outliers
-      gauss_filter_min_pts: 3
+      use_ransac_filter: True # use median filter to filter matched outliers

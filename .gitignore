@@ -10,6 +10,7 @@ __pycache__/
 # Data folders
 public/
 reports/
+private/
 
 # Distribution / packaging
 .Python
