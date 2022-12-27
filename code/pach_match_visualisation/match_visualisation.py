@@ -7,13 +7,39 @@ Created on Thu Feb 24 12:43:31 2022
 
 import os
 
+from patch_matcher.patch_matcher_utility import first_and_second_smallest
 from patch_matcher.simple_patch_matcher import SimplePatchMatcher
 from patch_matcher.advance_patch_matcher import AdvancePatchMatcher
 from utils.glob_def import DATA_DIR
 from PIL import Image
 import numpy as np
 from pach_match_visualisation.visualisation import show_matched_points, show_key_points
+import sys
 
+
+def match_features2visu(self, patch_features, template_features):
+    match = []
+    self.match_dist = []
+    nn_threshold = self.nn_threshold
+    # match features
+    for i in np.arange(0, patch_features.shape[0]):
+        patch_feature = patch_features[i]
+
+        # calculate dist from ith path_feature to each template_feature
+        distance = np.sqrt(np.sum((template_features - patch_feature) ** 2, axis=1))
+        m1, i1, m2, i2 = first_and_second_smallest(distance)
+        # if we have just 1 feature we won't use threshold
+        if patch_features.shape[0] != 1:
+            distance = m1 / (m2 + sys.float_info.epsilon)
+            match.append((i1, i))
+            match.append((i2, i))
+            self.match_dist.append(distance)
+        else:
+            match.append((i1, i))
+            self.match_dist.append(m1 / m2)
+
+    match = np.array(match)
+    return match
 
 # visualize match of patch and template
 def visualise_match(template, patch_matcher_type, path_to_patches, df):
@@ -30,8 +56,6 @@ def visualise_match(template, patch_matcher_type, path_to_patches, df):
     root_patch_path = os.path.join(DATA_DIR, 'set')
 
     # get grad and theta img from template
-    template_grad = patch_matcher.grad_mag
-    template_theta = patch_matcher.grad_theta
     template_key_points = patch_matcher.template_key_points
     show_key_points(org_template, template_key_points)
     # for each patch visu match
@@ -49,8 +73,6 @@ def visualise_match(template, patch_matcher_type, path_to_patches, df):
         patch_matcher.curr_image = np.array(patch) / 255
         patch = patch_matcher.preprocess(patch)
 
-        #patch = ndimage.gaussian_filter(patch, sigma=0.6, truncate=2)
-        #show_key_points(org_patch, np.array([]))
         # extract key points from patch
         patch_key_points = patch_matcher.extract_key_points(patch)
 
@@ -62,13 +84,10 @@ def visualise_match(template, patch_matcher_type, path_to_patches, df):
         x_expected = df.iloc[i]['x_expected']
         y_expected = df.iloc[i]['y_expected']
 
-        org_patch_ = org_template[y_expected: y_expected + patch.shape[0], x_expected: x_expected + patch.shape[1], :]
         # check if we have detected some key points
-        #show_key_points(org_patch, np.array([]))
         if patch_key_points.size == 0:
             print("No key points 1")
             continue
-
 
         # extract features from patch key points
         patch_key_points, patch_features = patch_matcher.extract_features(patch_key_points, patch)
@@ -86,7 +105,6 @@ def visualise_match(template, patch_matcher_type, path_to_patches, df):
         if match.size == 0:
             print("No match")
             continue
-            # show matched points
         # show_matched_points(org_template, org_patch, patch_matcher.template_key_points, patch_key_points, match)
 
         # find top left location on template of matched patch
@@ -97,5 +115,3 @@ def visualise_match(template, patch_matcher_type, path_to_patches, df):
 
         # show matched points
         show_matched_points(org_template, org_patch, patch_matcher.template_key_points, patch_key_points, match)
-
-    return 0

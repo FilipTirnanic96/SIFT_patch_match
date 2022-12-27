@@ -10,7 +10,7 @@ import matplotlib
 
 class Report:
 
-    def __init__(self, model_name: str = "adv_pm"):
+    def __init__(self, model_name: str = "advance_pm"):
         self.reports_folder_path = REPORT_DIR
         self.model_name = model_name
 
@@ -68,10 +68,3 @@ class Report:
                         os.path.join(output_dir, "patch_match_cfg.yml"))
 
         plt.close()
-
-if __name__ == "__main__":
-
-    report = Report()
-    df = pd.read_csv(r"C:\Users\uic52421\Documents\Python Scripts\PSIML\patch_match\code\df_kpi_6.csv")
-    input_name = "6.txt"
-    report.make_report(df, input_name)

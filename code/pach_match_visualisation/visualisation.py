@@ -22,7 +22,7 @@ def show_key_points(image, key_points):
     if picture2d:
         color = 0 
     else:
-        color = [255, 0 ,0] 
+        color = [255, 0, 0]
         
     for i in np.arange(0, key_points.shape[0]):
         # get key point location

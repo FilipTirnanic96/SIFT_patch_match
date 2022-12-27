@@ -125,7 +125,7 @@ class AdvancePatchMatcher(PatchMatcher):
             # % gradients in y direction.
             img_dy = conv2d(image, np.reshape(np.array([-1, 0, 1]), (1, -1)))
 
-            # anulate invalid features
+            # nullify invalid features
             if image.size > 20000:
                 img_dx[:, 0:8] = 0
                 img_dy[img_dy.shape[0] - 3:img_dy.shape[0], :] = 0
@@ -147,13 +147,10 @@ class AdvancePatchMatcher(PatchMatcher):
             self.grad_mag = img_dx2 + img_dy2
 
         # blur gradients
-        #img_dx2 = ndimage.gaussian_filter(img_dx2, sigma=2, truncate=1)
-        #img_dy2 = ndimage.gaussian_filter(img_dy2, sigma=2, truncate=1)
-        #img_dxy = ndimage.gaussian_filter(img_dxy, sigma=2, truncate=1)
-
         img_dx2 = conv2d(img_dx2, self.gauss_kernel)
         img_dy2 = conv2d(img_dy2, self.gauss_kernel)
         img_dxy = conv2d(img_dxy, self.gauss_kernel)
+
         # calculate det and trace for finding R
         detA = (img_dx2 * img_dy2) - (img_dxy ** 2)
         traceA = (img_dx2 + img_dy2)
@@ -162,7 +159,7 @@ class AdvancePatchMatcher(PatchMatcher):
         k = 0.05
         R = detA - k * (traceA ** 2)
 
-        # anulate invalid features
+        # nullify invalid features
         if image.size > 20000:
             R[:, 0:8] = 0
             R[R.shape[0] - 5:R.shape[0], :] = 0

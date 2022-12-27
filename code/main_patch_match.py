@@ -15,7 +15,6 @@ from pach_match_visualisation.match_visualisation import visualise_match
 import pandas as pd
 
 if __name__ == "__main__":
-    #get_ipython().run_line_magic('matplotlib', 'qt')
     # get map template image
     template_image_path = os.path.join(DATA_DIR,"set","map.png")
     template = Image.open(template_image_path)
@@ -49,7 +48,7 @@ if __name__ == "__main__":
     '''
     flag = 1
     if flag == 1:
-        model_name = "adv_pm_3_ch_ransac_public"
+        model_name = "adv_pm_3_ch_ransac_private"
         file_names = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         #file_names = [9]
         kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1, model_name)
