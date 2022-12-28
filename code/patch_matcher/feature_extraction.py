@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def compute_gradient_histogram(num_bins, gradient_magnitudes, gradient_angles):
+def compute_gradient_histogram(num_bins: int, gradient_magnitudes: np.array, gradient_angles: np.array) -> np.array:
     """
     Computes gradient histogram from gradient magnitudes and angles
 
@@ -28,7 +28,7 @@ def compute_gradient_histogram(num_bins, gradient_magnitudes, gradient_angles):
     return histogram
 
 
-def weight_gradient_histogram(histogram, coefficient):
+def weight_gradient_histogram(histogram: np.array, coefficient: float) -> np.array:
     """
     Weight gradient histogram bins according to distance from maximum value
 
