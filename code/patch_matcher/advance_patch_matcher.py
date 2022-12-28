@@ -1,4 +1,3 @@
-from scipy import ndimage
 import math
 
 from patch_matcher.feature_extraction import compute_gradient_histogram, weight_gradient_histogram
@@ -6,7 +5,7 @@ from patch_matcher.patch_matcher import PatchMatcher
 import numpy as np
 
 from patch_matcher.patch_matcher_utility import compute_affine_matrix, ransac_filter, \
-    conv2d, get_ransac_params, return_non_maximum_suppression_matrix_r, get_gauss_filter
+    conv2d, get_ransac_params, return_non_maximum_suppression_matrix_r, get_2d_gauss_kernel
 
 
 class AdvancePatchMatcher(PatchMatcher):
@@ -19,10 +18,7 @@ class AdvancePatchMatcher(PatchMatcher):
         # init params
         self.grad_mag = []
         self.grad_theta = []
-        self.gauss_kernel = get_gauss_filter(5, 2)
-        # debug
-        self.expected_x = -1
-        self.expected_y = -1
+        self.gauss_kernel = get_2d_gauss_kernel(5, 2)
 
         # ------- params ---------
         # preprocess image
@@ -32,26 +28,38 @@ class AdvancePatchMatcher(PatchMatcher):
         # extract key points from template
         self.template_key_points = self.extract_key_points(self.template)
         # extract template features
-        self.template_key_points, self.template_features = self.extract_features(self.template_key_points,
-                                                                                 self.template)
-
-        if self.use_gauss_global_norm:
-            self.global_feature_mean = np.mean(self.template_features, axis=0, keepdims=True)
-            self.global_feature_std = np.std(self.template_features, axis=0, keepdims=True)
-
-        # nomalize features
+        self.template_features = self.extract_features(self.template_key_points,
+                                                       self.template)
+        # normalize features
         self.template_features = self.normalize_features(self.template_features)
 
     def __load_params_from_config(self, config):
+        """
+        Init parameters from config yaml file
 
+        :param config: Input loaded yaml config file
+        """
         advanced_pm_params = config['advanced_patch_matcher']
 
-        self.patch_size = advanced_pm_params['patch_size']
         # <IMAGE PROCESSING PARAMS>
-        self.n_max_points_corners_template = advanced_pm_params['n_max_points_corners_template']
-        self.n_max_points_edges_template = advanced_pm_params['n_max_points_edges_template']
-        self.n_max_points_corners_patch = advanced_pm_params['n_max_points_corners_patch']
-        self.n_max_points_edges_patch = advanced_pm_params['n_max_points_edges_patch']
+        self.neighbourhood_patch_size = advanced_pm_params['neighbourhood_patch_size']
+
+        # <KEY POINTS PARAMS>
+        # corner key points params
+        key_points_corner_params = advanced_pm_params['key_points_corner']
+        self.n_max_points_corners_template = key_points_corner_params['n_max_points_template']
+        self.n_max_points_corners_patch = key_points_corner_params['n_max_points_patch']
+        self.threshold_corner_low = key_points_corner_params['threshold_low']
+        self.nms_corner_neighbourhood = key_points_corner_params['nms_neighbourhood']
+
+        # edge key points params
+        key_points_corner_edge = advanced_pm_params['key_points_edge']
+        self.n_max_points_edges_template = key_points_corner_edge['n_max_points_template']
+        self.n_max_points_edges_patch = key_points_corner_edge['n_max_points_patch']
+        self.threshold_edge_low = key_points_corner_edge['threshold_low']
+        self.threshold_edge_high = key_points_corner_edge['threshold_high']
+        self.nms_edge_neighbourhood = key_points_corner_edge['nms_neighbourhood']
+
         # <FEATURE PARAMS>
         # use all 3 channels for features
         feature_extraction_params = advanced_pm_params['feature_extraction']
@@ -65,21 +73,27 @@ class AdvancePatchMatcher(PatchMatcher):
         # gradient histogram
         self.num_angle_bins = feature_extraction_params['gradient_histogram']['num_angle_bins']
         self.weight_coefficient = feature_extraction_params['gradient_histogram']['weight_coefficient']
+
         # <MATCHING PARAMS>
         # filtering outlier matches
         match_params = advanced_pm_params['match']
         self.two_point_max_diff = match_params['two_point_max_diff']
         self.use_ransac_filter = match_params['filters']['use_ransac_filter']
 
-    # override abstract method
-    # use Harris detector to extract corner points
-    # returns x,y key points location
     def extract_key_points(self, image):
+        """
+        Extracts key points from image (override abstract method).
+        Use Harris detector approach to extract corner and edge points.
 
-        avg_channel_dx2 = 0
-        avg_channel_dy2 = 0
-        avg_channel_dxdy = 0
+        :param image: Input image
+        :return: Key points
+        """
+
         if self.use_3_channels:
+            # init params
+            sum_channel_dx2 = 0
+            sum_channel_dy2 = 0
+            sum_channel_dxdy = 0
             self.channels_grad_mag.clear()
             self.channels_grad_theta.clear()
 
@@ -87,48 +101,37 @@ class AdvancePatchMatcher(PatchMatcher):
             for channel in [0, 1, 2]:
                 channel_img = self.curr_image[:, :, channel]
                 # find image gradients
-                # % gradient image, for gradients in x direction.
                 channel_img_dx = conv2d(channel_img, np.reshape(np.array([-1, 0, 1]), (-1, 1)))
                 channel_img_dy = conv2d(channel_img, np.reshape(np.array([-1, 0, 1]), (1, -1)))
 
+                # calculate required matrix for each channel for response matrix R
+                channel_img_dx2 = 1.0 * channel_img_dx ** 2
+                sum_channel_dx2 += channel_img_dx2
+
+                channel_img_dy2 = 1.0 * channel_img_dy ** 2
+                sum_channel_dy2 += channel_img_dy2
+
+                channel_img_dxdy = 1.0 * channel_img_dx * channel_img_dy
+                sum_channel_dxdy += channel_img_dxdy
+
+                # calculate channel gradient magnitude
+                channel_grad_mag = channel_img_dx2 + channel_img_dy2
                 # calculate gradient angle
                 channel_grad_theta = np.arctan2(channel_img_dy, channel_img_dx)
                 # map gradient from 0 - 2* pi
                 channel_grad_theta = channel_grad_theta % (2 * np.pi)
-
-                channel_img_dx2 = 1.0 * channel_img_dx ** 2
-                avg_channel_dx2 += channel_img_dx2
-
-                channel_img_dy2 = 1.0 * channel_img_dy ** 2
-                avg_channel_dy2 += channel_img_dy2
-
-                channel_img_dxdy = 1.0 * channel_img_dx * channel_img_dy
-                avg_channel_dxdy += channel_img_dxdy
-
-                channel_grad_mag = channel_img_dx2 + channel_img_dy2
-
+                # add channel gradient magnitude and angle to list
                 self.channels_grad_mag.append(channel_grad_mag)
                 self.channels_grad_theta.append(channel_grad_theta)
 
-            avg_channel_dx2 /= 3.0
-            avg_channel_dy2 /= 3.0
-            avg_channel_dxdy /= 3.0
-
-        # find image gradients
-        if self.use_3_channels:
-            img_dx2 = avg_channel_dx2
-            img_dy2 = avg_channel_dy2
-            img_dxy = avg_channel_dxdy
+            # average calculated required matrices for response matrix R
+            img_dx2 = sum_channel_dx2 / 3.0
+            img_dy2 = sum_channel_dy2 / 3.0
+            img_dxy = sum_channel_dxdy / 3.0
         else:
-            # % gradient image, for gradients in x direction.
+            # find image gradients
             img_dx = conv2d(image, np.reshape(np.array([-1, 0, 1]), (-1, 1)))
-            # % gradients in y direction.
             img_dy = conv2d(image, np.reshape(np.array([-1, 0, 1]), (1, -1)))
-
-            # nullify invalid features
-            if image.size > 20000:
-                img_dx[:, 0:8] = 0
-                img_dy[img_dy.shape[0] - 3:img_dy.shape[0], :] = 0
 
             # calculate gradient angle
             self.grad_theta = np.arctan2(img_dy, img_dx)
@@ -139,7 +142,7 @@ class AdvancePatchMatcher(PatchMatcher):
             img_dx = np.absolute(img_dx)
             img_dy = np.absolute(img_dy)
 
-            # calculate values for M matrix
+            # calculate values for response matrix R
             img_dx2 = 1.0 * img_dx ** 2
             img_dy2 = 1.0 * img_dy ** 2
             img_dxy = 1.0 * img_dx * img_dy
@@ -155,23 +158,24 @@ class AdvancePatchMatcher(PatchMatcher):
         detA = (img_dx2 * img_dy2) - (img_dxy ** 2)
         traceA = (img_dx2 + img_dy2)
 
-        # calculate response for Harris Corner equation
+        # calculate response matrix R for Harris Corner detection
         k = 0.05
         R = detA - k * (traceA ** 2)
 
-        # nullify invalid features
+        # nullify invalid features for template image
         if image.size > 20000:
             R[:, 0:8] = 0
             R[R.shape[0] - 5:R.shape[0], :] = 0
 
         R = abs(R)
-        step = int(np.floor(self.patch_size/2))
+        step = int(np.floor(self.neighbourhood_patch_size / 2))
         # set edge pixels to zero
         R[0:step, :] = 0
         R[-step:, :] = 0
         R[:, 0:step] = 0
         R[:, -step:] = 0
 
+        # set max keep points parameters depending on template or patch image
         if image.size > 20000:
             n_max_points_corners = self.n_max_points_corners_template
             n_max_points_edges = self.n_max_points_edges_template
@@ -179,23 +183,21 @@ class AdvancePatchMatcher(PatchMatcher):
             n_max_points_corners = self.n_max_points_corners_patch
             n_max_points_edges = self.n_max_points_edges_patch
 
-        # make corner points R
+        # extract corner points R
         R_corners = R.copy()
-        th_corners = 1e-5
-        R_corners[R_corners < th_corners] = 0
+        R_corners[R_corners < self.threshold_corner_low] = 0
 
-        neighbourhood = 4
-        R_corners = return_non_maximum_suppression_matrix_r(R_corners, neighbourhood, n_max_points_corners)
+        # non maxima suppression
+        R_corners = return_non_maximum_suppression_matrix_r(R_corners, self.nms_corner_neighbourhood,
+                                                            n_max_points_corners)
 
         # make edge points R
         R_edge = R.copy()
-        th_edge_high = 7e-6
-        th_edge_low = 5e-6
-        R_edge[R_edge > th_edge_high] = 0
-        R_edge[R_edge < th_edge_low] = 0
+        R_edge[R_edge > self.threshold_edge_high] = 0
+        R_edge[R_edge < self.threshold_edge_low] = 0
 
-        neighbourhood = 8
-        R_edge = return_non_maximum_suppression_matrix_r(R_edge, neighbourhood, n_max_points_edges)
+        # non maxima suppression
+        R_edge = return_non_maximum_suppression_matrix_r(R_edge, self.nms_edge_neighbourhood, n_max_points_edges)
 
         # extract key points (corners + edges)
         R_sum = R_edge + R_corners
@@ -212,58 +214,71 @@ class AdvancePatchMatcher(PatchMatcher):
         return key_points
 
     def extract_features(self, key_points, image):
+        """
+        Extracts feature around key points from image (override abstract method).
+        Features are gradient histograms calculated around key point.
+
+        :param key_points: Array of tuple representing key points
+        :param image: Input image
+        :return: Features for each key point
+        """
+
+        # init properties
         features = []
-        patch_step = math.floor(self.patch_size / 2)
+        neighbourhood_patch_step = math.floor(self.neighbourhood_patch_size / 2)
         num_angles = self.num_angle_bins
-        key_points_flag = np.ones((key_points.shape[0]), dtype=bool)
+        # loop over each key point
         for i in np.arange(0, key_points.shape[0]):
             # get key point location
             x, y = key_points[i]
             # get patch around key point
-            min_y = y - patch_step
-            max_y = y + patch_step + 1
-            min_x = x - patch_step
-            max_x = x + patch_step + 1
-
-            if min_y < 0:
-                min_y = 0
-            if max_y > image.shape[0]:
-                max_y = image.shape[0]
-            if min_x < 0:
-                min_x = 0
-            if max_x > image.shape[1]:
-                max_x = image.shape[1]
+            min_y = y - neighbourhood_patch_step
+            max_y = y + neighbourhood_patch_step + 1
+            min_x = x - neighbourhood_patch_step
+            max_x = x + neighbourhood_patch_step + 1
 
             if self.use_3_channels:
                 feature = []
                 for channel in [0, 1, 2]:
+                    # get channel gradient magnitude and angle matrix
                     channel_grad_mag = self.channels_grad_mag[channel]
                     channel_grad_theta = self.channels_grad_theta[channel]
-
-                    channel_patch_grad = channel_grad_mag[min_y: max_y, min_x: max_x]
-                    channel_patch_theta = channel_grad_theta[min_y: max_y, min_x: max_x]
-                    channel_feature = compute_gradient_histogram(num_angles, channel_patch_grad,
-                                                                 channel_patch_theta)
-
+                    # extract neighbourhood patch around keypoint
+                    channel_neighbourhood_patch_grad = channel_grad_mag[min_y: max_y, min_x: max_x]
+                    channel_neighbourhood_patch_theta = channel_grad_theta[min_y: max_y, min_x: max_x]
+                    # compute gradient histogram
+                    channel_feature = compute_gradient_histogram(num_angles, channel_neighbourhood_patch_grad,
+                                                                 channel_neighbourhood_patch_theta)
+                    # sum gradient histograms for each channel
                     if len(feature) == 0:
                         feature = channel_feature
                     else:
                         feature += channel_feature
 
             else:
-                patch_grad = self.grad_mag[min_y: max_y, min_x: max_x]
-                patch_theta = self.grad_theta[min_y: max_y, min_x: max_x]
-
-                feature = compute_gradient_histogram(num_angles, patch_grad, patch_theta)
-
+                # extract neighbourhood patch around keypoint
+                neighbourhood_patch_grad = self.grad_mag[min_y: max_y, min_x: max_x]
+                neighbourhood_patch_theta = self.grad_theta[min_y: max_y, min_x: max_x]
+                # compute gradient histogram
+                feature = compute_gradient_histogram(num_angles, neighbourhood_patch_grad, neighbourhood_patch_theta)
+            # weight gradient histogram
             feature = weight_gradient_histogram(feature, self.weight_coefficient)
+            # add new feature
             features.append(feature)
 
-        key_points = key_points[key_points_flag, :]
         features = np.array(features)
-        return key_points, features
+
+        return features
 
     def find_corresponding_location_of_patch(self, patch_key_points, match):
+        """
+        Finds the location of top left corner of the patch in template image (override abstract method).
+        Take optimum affine transformation matrix. Uses RANSAC to filter outliers.
+
+        :param patch_key_points: Patch key points array
+        :param match: Match array
+        :return: Top left position in template image and match array
+        """
         # find index of best representative feature
         best_match = np.array([match[np.argmin(self.match_dist), :]])
 

@@ -9,7 +9,7 @@ patch_matcher:
 
 advanced_patch_matcher:
 
-  patch_size: 7 # size of patch for feature extraction
+  neighbourhood_patch_size: 7 # size of patch for feature extraction
 
   key_points_corner:
     n_max_points_template: 1800 # max key points to extract for template
