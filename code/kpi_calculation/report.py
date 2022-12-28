@@ -11,10 +11,20 @@ import matplotlib
 class Report:
 
     def __init__(self, model_name: str = "advance_pm"):
+        # set directory where reports will be saved
         self.reports_folder_path = REPORT_DIR
+        # set name of used patch match model
         self.model_name = model_name
 
     def make_report(self, df: pd.DataFrame, input_name: str):
+        """
+        Makes report of patch matcher KPI results.
+        Saves figures and cvs files.
+
+        :param df: Patch matcher KPI results
+        :param input_name: Name of input txt file
+        """
+
         # make folder for results
         output_dir = os.path.join(self.reports_folder_path, self.model_name)
         if not os.path.exists(output_dir):
@@ -31,6 +41,7 @@ class Report:
         ax.bar_label(ax.containers[0])
 
         plt.savefig(os.path.join(output_dir, input_name + '_det_stat.png'))
+
         # get all miss detections
         # bar plot number of miss detections and n_points_matched
         if df.shape[0] > 0:
