@@ -90,7 +90,7 @@ def visualise_match(template, patch_matcher_type, path_to_patches, df):
             continue
 
         # extract features from patch key points
-        patch_key_points, patch_features = patch_matcher.extract_features(patch_key_points, patch)
+        patch_features = patch_matcher.extract_features(patch_key_points, patch)
         show_key_points(org_patch, patch_key_points)
         # check if we have detected some features
         if patch_features.size == 0:

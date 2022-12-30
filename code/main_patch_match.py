@@ -1,13 +1,7 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 15 12:38:04 2020
-
-@author: Filip
-"""
 import os
 from PIL import Image
 import time
-from utils.glob_def import DATA_DIR
+from utils.glob_def import DATA_DIR, DATA
 from patch_matcher.advance_patch_matcher import AdvancePatchMatcher
 from kpi_calculation.calculate_kpi import CalculateKPI 
 from pach_match_visualisation.match_visualisation import visualise_match
@@ -48,14 +42,14 @@ if __name__ == "__main__":
     '''
     flag = 1
     if flag == 1:
-        model_name = "adv_pm_3_ch_ransac_private"
+        model_name = "adv_pm_3_ch_ransac_new" + DATA
         file_names = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         #file_names = [9]
         kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1, model_name)
         df_kpi = kpi_.calculate_kpis_from_inputs(file_names)
 
     elif flag == 2:
-        df_kpi = pd.read_csv(r'C:\Users\uic52421\Documents\Python Scripts\PSIML\patch_match\code\reports\adv_pm_3_ch_ransac_private_new\9.txt_n_points_matched_miss_1_less.csv')
+        df_kpi = pd.read_csv(r'C:\Users\uic52421\Documents\Python Scripts\PSIML\patch_match\code\reports\adv_pm_3_ch_ransac_newpublic\1.txt_good_detection.csv')
         #df_kpi = df_kpi[df_kpi.n_points_matched >= 1]
         num_visu = 30
         df_kpi = df_kpi.iloc[:num_visu]

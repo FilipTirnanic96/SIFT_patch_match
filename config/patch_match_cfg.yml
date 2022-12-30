@@ -14,7 +14,7 @@ advanced_patch_matcher:
   key_points_corner:
     n_max_points_template: 1800 # max key points to extract for template
     n_max_points_patch: 8 # max key points to extract for patch
-    threshold_low: 0.00001 # lower threshold for response matrix
+    threshold_low: 0.00003 # lower threshold for response matrix
     nms_neighbourhood: 4 # local non maximum suppression neighbourhood
 
   key_points_edge:

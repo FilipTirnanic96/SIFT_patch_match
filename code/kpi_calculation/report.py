@@ -69,10 +69,16 @@ class Report:
 
             # save miss detections df with n_points_matched > 1
             miss_detection_df_1_greater = miss_detection_df[miss_detection_df['n_points_matched'] > 1]
-            miss_detection_df_1_greater.to_csv(os.path.join(output_dir, input_name + '_n_points_matched_miss_1_greater.csv'))
+            miss_detection_df_1_greater.to_csv(
+                os.path.join(output_dir, input_name + '_n_points_matched_miss_1_greater.csv'))
 
             miss_detection_df_1_less = miss_detection_df[miss_detection_df['n_points_matched'] <= 1]
             miss_detection_df_1_less.to_csv(os.path.join(output_dir, input_name + '_n_points_matched_miss_1_less.csv'))
+
+        # save true detections df
+        detection_df = df[df['matched'] == True]
+        if detection_df.shape[0] > 0:
+            detection_df.to_csv(os.path.join(output_dir, input_name + '_good_detection.csv'))
 
         # save algo parameters
         shutil.copyfile(os.path.join(CONFIG_DIR, "patch_match_cfg.yml"),
