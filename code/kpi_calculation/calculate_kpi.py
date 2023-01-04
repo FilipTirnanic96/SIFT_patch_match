@@ -79,8 +79,8 @@ class CalculateKPI:
         """
 
         # if file name is -1 return empty dataframe
-        if file_name_number != -1:
-            return pd.DataFrame([], self.df_columns)
+        if file_name_number == -1:
+            return pd.DataFrame([], columns = self.df_columns)
 
         # process template image
         template_image_path = os.path.join(self.dataset_path, "set", "map.png")
@@ -106,6 +106,10 @@ class CalculateKPI:
 
             # open current input.txt file
             with open(os.path.join(self.path_to_input_txt_files, txt_file), 'r') as f:
+                # read path to template
+                f.readline()
+                # read num patches
+                f.readline()
                 # read initial params
                 patch_size_str = f.readline().split()
                 ph = int(patch_size_str[0])
@@ -176,7 +180,7 @@ class CalculateKPI:
                     path_to_patch = f.readline()
 
             # create dataframe
-            df_kpi_file = pd.DataFrame(kpis_file, self.df_columns)
+            df_kpi_file = pd.DataFrame(kpis_file, columns = self.df_columns)
 
             # make report from dataframe
             self.report.make_report(df_kpi_file, txt_file)
@@ -184,7 +188,7 @@ class CalculateKPI:
             output_f.close()
 
         # crata
-        df_kpi = pd.DataFrame(kpis, self.df_columns)
+        df_kpi = pd.DataFrame(kpis, columns = self.df_columns)
 
         if file_name_number == -1:
             # make report for all data

@@ -56,7 +56,7 @@ class Report:
             plt.savefig(os.path.join(output_dir, input_name + '_n_points_matched.png'))
 
             # save matched patch details
-            patch_matched_df.to_csv(os.path.join(output_dir, input_name + 'patch_matched.csv'))
+            patch_matched_df.to_csv(os.path.join(output_dir, input_name + '_patch_matched.csv'))
 
         # get all miss matched patches
         # bar plot number of histogram of n_points_matched for miss matched patches
