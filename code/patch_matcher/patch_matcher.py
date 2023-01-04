@@ -14,9 +14,18 @@ class PatchMatcher(ABC):
         self.config = load_config()
         # params
         self.__load_params_from_config(self.config)
-        # init patch match properties
+        # init current processed image
         self.curr_image = np.array([])
+        # init template key points
+        self.template_key_points = np.array([])
         self.template_features = np.array([])
+        # init patch key points
+        self.patch_key_points = np.array([])
+        self.patch_features = np.array([])
+        # init patch match
+        self.match = np.array([])
+
+        # init patch match properties
         self.verbose = verbose
         self.time_passed_sec = -1
 
@@ -161,38 +170,38 @@ class PatchMatcher(ABC):
         patch = self.preprocess(patch)
 
         # extract key points from patch
-        patch_key_points = self.extract_key_points(patch)
+        self.patch_key_points = self.extract_key_points(patch)
 
         # check if we have detected some key points
-        if patch_key_points.size == 0:
+        if self.patch_key_points.size == 0:
             self.n_points_matched = 0
             return 0, 0
 
         # extract features from patch
-        patch_features = self.extract_features(patch_key_points, patch)
+        self.patch_features = self.extract_features(self.patch_key_points, patch)
 
         # check if we have detected some features
-        if patch_features.size == 0:
+        if self.patch_features.size == 0:
             self.n_points_matched = 0
             return 0, 0
 
         # normalize features
-        patch_features = self.normalize_features(patch_features)
+        patch_features = self.normalize_features(self.patch_features)
 
         # find feature match between patch and template
-        match = self.match_features(patch_features, self.template_features)
+        self.match = self.match_features(patch_features, self.template_features)
 
         # check if we have matched some features
-        if match.size == 0:
+        if self.match.size == 0:
             self.n_points_matched = 0
             return 0, 0
 
         # find top left location in template for matched patch
-        x_left_top, y_left_top, match = self.find_corresponding_location_of_patch(patch_key_points, match)
+        x_left_top, y_left_top, self.match = self.find_corresponding_location_of_patch(self.patch_key_points, self.match)
 
         # set num of matched points
-        if match.size > 0:
-            self.n_points_matched = match.shape[0]
+        if self.match.size > 0:
+            self.n_points_matched = self.match.shape[0]
         else:
             self.n_points_matched = 0
 

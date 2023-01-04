@@ -20,6 +20,7 @@ def show_key_points(image: np.array, key_points: np.array):
 
     # plot key points
     plt.figure()
+    plt.axis('off')
     # init thickness and radius of key points
     thickness = -1
     radius = 1
