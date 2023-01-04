@@ -4,7 +4,7 @@ Useful global definitions
 import os
 
 # Data to use (public/private)
-DATA = "private"
+DATA = "public"
 
 # Directories
 ROOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")  # type: str # Project root directory
