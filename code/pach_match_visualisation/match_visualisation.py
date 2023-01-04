@@ -2,8 +2,7 @@
 
 import os
 
-from patch_matcher.simple_patch_matcher import SimplePatchMatcher
-from patch_matcher.advance_patch_matcher import AdvancePatchMatcher
+from patch_matcher.patch_matcher import PatchMatcher
 from utils.glob_def import DATA_DIR
 from PIL import Image
 import numpy as np
@@ -11,25 +10,17 @@ from pach_match_visualisation.visualisation import show_matched_points, show_key
 import pandas as pd
 
 
-def visualise_match(template: np.array, patch_matcher_type: str, df: pd.DataFrame):
+def visualise_match(template: np.array, patch_matcher: PatchMatcher, df: pd.DataFrame):
     """
     Visualise matched point between template and patch.
 
     :param template: Template image
-    :param patch_matcher_type: Patch matcher type
+    :param patch_matcher: Patch matcher
     :param df: Dataframe got from KPI report
     """
 
     # original patch for visualisation
     org_template = np.array(template)
-
-    # init patch matcher
-    if patch_matcher_type == 'simple':
-        patch_matcher = SimplePatchMatcher(template)
-    elif patch_matcher_type == 'advanced':
-        patch_matcher = AdvancePatchMatcher(template)
-    else:
-        raise ValueError("Patch matcher type must be simple or advanced")
 
     # init root folder for patches
     root_patch_path = os.path.join(DATA_DIR, 'set')
