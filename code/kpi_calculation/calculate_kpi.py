@@ -15,6 +15,7 @@ from kpi_calculation.report import Report
 class CalculateKPI:
 
     def __init__(self, path_to_dataset: str, patch_matcher_: PatchMatcher, model_name: str = "adv_pm"):
+        # init paths
         self.dataset_path = path_to_dataset
         self.path_to_input_txt_files = os.path.join(path_to_dataset, 'inputs')
         self.path_to_output_txt_files = os.path.join(path_to_dataset, 'outputs')
@@ -23,23 +24,37 @@ class CalculateKPI:
         self.patch_matcher_ = patch_matcher_
         # init report
         self.report = Report(model_name)
+        # init columns of dataframe
+        self.df_columns = ['path', 'x_match', 'y_match', 'x_expected', 'y_expected', 'n_points_matched',
+                           'matched', 'time']
 
     def calculate_kpis_from_inputs(self, file_names_number: list):
+        """
+        Calculates KPI for giver list of file number as input. Generates report from
+        dataframe of each filename input.
+
+        :param file_names_number: List of file names used as input.
+        """
+
         if len(file_names_number) == 0:
             return
 
         cumulative_matched = 0
         cumulative_num_patches = 0
         cumulative_time = 0
+        # loop through all inputs
         for file_name_number in file_names_number:
+            # calculate kpi for each input
             df_kpi = self.calculate_kpis(file_name_number)
 
             num_patches_to_process = df_kpi.shape[0]
             accuracy = (sum(df_kpi['matched'] == 1)) / num_patches_to_process
             time_taken = sum(df_kpi['time'])
-
-            print('Accuracy for filename', file_name_number, '.txt for n =', num_patches_to_process, 'processed patches is', accuracy)
-            print('Time taken for filename', file_name_number, '.txt for n =', num_patches_to_process, 'processed patches is', time_taken)
+            # print overall statistics
+            print('Accuracy for filename', file_name_number, '.txt for n =', num_patches_to_process,
+                  'processed patches is', accuracy)
+            print('Time taken for filename', file_name_number, '.txt for n =', num_patches_to_process,
+                  'processed patches is', time_taken)
 
             cumulative_matched += sum(df_kpi['matched'] == 1)
             cumulative_num_patches += num_patches_to_process
@@ -48,10 +63,25 @@ class CalculateKPI:
         if len(file_names_number) > 1:
             cumulative_accuracy = cumulative_matched / cumulative_num_patches
             cumulative_time = cumulative_time / cumulative_num_patches
+            # print overall statistics
             print('Overall Accuracy for n =', cumulative_num_patches, 'processed patches is', cumulative_accuracy)
             print('Overall avg time taken for n =', cumulative_num_patches, 'processed patches is', cumulative_time)
 
-    def calculate_kpis(self, file_name_number: int = -1):
+    def calculate_kpis(self, file_name_number: int = -1) -> pd.DataFrame:
+        """
+        Return dataframe for one input file and generates report from dataframe.
+        Each data frame is array of each patch match statistics (ground truth
+        patch position, estimated patch position, flag if match was successful
+        and time match took). Match is successful if estimated patch position
+        is around 20 x 20 pixels of true patch position.
+        :param file_name_number: Number of file used as input
+        :return: dataframe: Input statistics for each patch
+        """
+
+        # if file name is -1 return empty dataframe
+        if file_name_number != -1:
+            return pd.DataFrame([], self.df_columns)
+
         # process template image
         template_image_path = os.path.join(self.dataset_path, "set", "map.png")
         template = Image.open(template_image_path)
@@ -77,8 +107,6 @@ class CalculateKPI:
             # open current input.txt file
             with open(os.path.join(self.path_to_input_txt_files, txt_file), 'r') as f:
                 # read initial params
-                path_to_template = f.readline()
-                num_patches = int(f.readline())
                 patch_size_str = f.readline().split()
                 ph = int(patch_size_str[0])
                 pw = int(patch_size_str[1])
@@ -127,7 +155,7 @@ class CalculateKPI:
                     # append num of matched points
                     kpi_list.append(self.patch_matcher_.n_points_matched)
 
-                    # check if we are in 120 neighborhood (6x6 pixels missed)
+                    # check if we are in 20 neighborhood (20x20 area around expected patch position)
                     matched = False
                     if abs(x_expected - x_match) <= 20 and abs(y_expected - y_match) <= 20:
                         matched = True
@@ -147,18 +175,19 @@ class CalculateKPI:
                     # read new patch path
                     path_to_patch = f.readline()
 
-            df_kpi_file = pd.DataFrame(kpis_file,
-                                  columns=['path', 'x_match', 'y_match', 'x_expected', 'y_expected', 'n_points_matched',
-                                           'matched', 'time'])
+            # create dataframe
+            df_kpi_file = pd.DataFrame(kpis_file, self.df_columns)
 
+            # make report from dataframe
             self.report.make_report(df_kpi_file, txt_file)
             # close current output file
             output_f.close()
 
-        df_kpi = pd.DataFrame(kpis, columns=['path', 'x_match', 'y_match', 'x_expected', 'y_expected', 'n_points_matched',
-                                       'matched', 'time'])
+        # crata
+        df_kpi = pd.DataFrame(kpis, self.df_columns)
 
         if file_name_number == -1:
+            # make report for all data
             self.report.make_report(df_kpi, "all_data.txt")
 
         # return report
