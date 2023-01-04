@@ -1,59 +1,101 @@
 import os
 from PIL import Image
-import time
-from utils.glob_def import DATA_DIR, DATA
+
+from patch_matcher.patch_matcher import PatchMatcher
+from patch_matcher.simple_patch_matcher import SimplePatchMatcher
+from utils.glob_def import DATA_DIR, DATA, REPORT_DIR
 from patch_matcher.advance_patch_matcher import AdvancePatchMatcher
 from kpi_calculation.calculate_kpi import CalculateKPI 
 from pach_match_visualisation.match_visualisation import visualise_match
-
+import numpy as np
 import pandas as pd
 
-if __name__ == "__main__":
-    # get map template image
-    template_image_path = os.path.join(DATA_DIR,"set","map.png")
-    template = Image.open(template_image_path)
-    
-    
-    # initialise Simple Path Macher
-    time_s = time.time()
-    patch_matcher_1 = AdvancePatchMatcher(template)
-    passt1 = time.time() - time_s
-    print(passt1)
-    # take first n patches
-    n_patches = 10
-    # cumulative time taken
-    t_cum = 0
-    
-    # initialise Simple Path Macher
-    '''time_s = time.time()
-    patch_matcher_ = SimplePatchMatcher(template, 40, 40, 2)
-    passt2 =  time.time() - time_s 
-    print(passt2)
-    '''
-    '''
-    # init object for kpi cals
-    num_patches_to_process = 20
-    kpi_ = CalculateKPI(DATA_DIR, patch_matcher_)
-    df_kpi = kpi_.calculate_kpis(-1, num_patches_to_process)
-    accuracy = (sum(df_kpi['matched'] == 1))/df_kpi.shape[0]
-    time_taken = sum(df_kpi['time'])
-    print('Accuracy for n =',num_patches_to_process,'processed patches is', accuracy)
-    print('Time taken for n =',num_patches_to_process,'processed patches is', time_taken)
-    '''
-    flag = 1
-    if flag == 1:
-        model_name = "adv_pm_3_ch_ransac_new" + DATA
-        file_names = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        #file_names = [9]
-        kpi_ = CalculateKPI(DATA_DIR, patch_matcher_1, model_name)
-        df_kpi = kpi_.calculate_kpis_from_inputs(file_names)
 
-    elif flag == 2:
-        df_kpi = pd.read_csv(r'C:\Users\uic52421\Documents\Python Scripts\PSIML\patch_match\code\reports\adv_pm_3_ch_ransac_newpublic\1.txt_good_detection.csv')
-        #df_kpi = df_kpi[df_kpi.n_points_matched >= 1]
-        num_visu = 30
-        df_kpi = df_kpi.iloc[:num_visu]
-        
-        visualise_match(template, 'advanced', df_kpi['path'], df_kpi)
+def get_patch_matcher(template: np.array, patch_matcher_type: str) -> PatchMatcher:
+    """
+    Returns patch matcher object from definer patch matcher type.
+
+    :param template: Template image
+    :param patch_matcher_type: Type of patch matcher
+    :return: Patch matcher object
+    """
+
+    # get patch matcher
+    if patch_matcher_type == 'simple':
+        patch_matcher = SimplePatchMatcher(template)
+    elif patch_matcher_type == 'advanced':
+        patch_matcher = AdvancePatchMatcher(template)
     else:
-        patch_matcher_1 = AdvancePatchMatcher(template)
+        raise ValueError("Patch matcher type must be simple or advanced")
+
+    return patch_matcher
+
+
+def generate_kpi_reports(list_file_names: list, patch_matcher_type: str, model_name: str):
+    """
+    Generate KPI reports for input list file names.
+
+    :param list_file_names: Input list of txt number file names
+    :param patch_matcher_type: Type of patch matcher
+    :param model_name: Model name for creating report
+    """
+
+    # get map template image
+    template_image_path = os.path.join(DATA_DIR, "set", "map.png")
+    template = Image.open(template_image_path)
+
+    # get patch matcher
+    patch_matcher = get_patch_matcher(template, patch_matcher_type)
+
+    # generate KPI reports
+    kpi = CalculateKPI(DATA_DIR, patch_matcher, model_name)
+    kpi.calculate_kpis_from_inputs(list_file_names)
+
+
+def visualise_patch_matches(kpi_df: pd.DataFrame, patch_matcher_type: str, num_to_visualise: int):
+    """
+    Visualise patches match with template.
+
+    :param kpi_df: KPI report for patches
+    :param patch_matcher_type: Type of patch matcher
+    :param num_to_visualise: Number of random patches to be visualised
+    """
+
+    # get map template image
+    template_image_path = os.path.join(DATA_DIR, "set", "map.png")
+    template = Image.open(template_image_path)
+    # get patch matcher
+    patch_matcher = get_patch_matcher(template, patch_matcher_type)
+
+    # random sample n patches
+    df_kpi_sample = kpi_df.sample(num_to_visualise)
+
+    # visualise matches
+    visualise_match(template, patch_matcher, df_kpi_sample)
+
+
+if __name__ == "__main__":
+    """
+    Test patch match implementation. 
+    
+    Flag 1 will generate report for file names defined in file_names_list.
+    Set Data variable in utils/glob_def.py to "public" or "private" depending on which data 
+    you want to use.
+    
+    Flag 2 will show how patch matcher matched random sampled patches for report provided with
+    string path_to_report_csv. Number of random sampled patches is defined with num_to_visualise_.
+    """
+
+    test_implementation_flag = 2
+    if test_implementation_flag == 1:
+        file_names_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        patch_matcher_type_ = "advanced"
+        model_name = "advance_patch_matcher_" + DATA
+        generate_kpi_reports(file_names_list, patch_matcher_type_, model_name)
+
+    elif test_implementation_flag == 2:
+        path_to_report_csv = r"\advance_patch_matcher_" + DATA + r"\4.txt_patch_matched.csv"
+        df_kpi = pd.read_csv(REPORT_DIR + path_to_report_csv)
+        patch_matcher_type_ = "advanced"
+        num_to_visualise_ = 30
+        visualise_patch_matches(df_kpi, patch_matcher_type_, num_to_visualise_)
