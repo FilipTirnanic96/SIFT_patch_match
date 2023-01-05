@@ -26,7 +26,7 @@ To solve this problem we implemented patch matcher. Patch matcher extract releva
 	&emsp;4. &ensp; Match current patch features and saved template features <br/>
 	&emsp;5. &ensp; Calculate transformation which transforms patch key points to template key points from matched features points <br/>
   
-<ins>There are two patch matcher implementations. **Everything is implemented using just numpy and pandas library:**</ins> <br/>
+<ins>There are two patch matcher implementations. **Everything is implemented using only numpy:**</ins> <br/>
 	&emsp;1) &ensp; _Simple patch matcher:_ <br/>
 		&emsp;&emsp;a. &ensp; key points - **each pixel** in template image; **center** of patch <br/>
 		&emsp;&emsp;b. &ensp; features - **pixel values** around key point (20x20 area) <br/>
