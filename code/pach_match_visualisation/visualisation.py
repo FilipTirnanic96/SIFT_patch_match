@@ -50,53 +50,59 @@ def show_key_points(image: np.array, key_points: np.array):
 
 
 def show_matched_points(template: np.array, patch: np.array, template_key_points: np.array, patch_key_points: np.array,
-                        match: np.array):
+                        match: np.array, merged_image: np.array = None, offset_x: int = -1, offset_y = -1):
     """
-    Plots lines connecting matched points from template and patch.
+    Plots lines connecting matched points from template and patch. If merged image is None one patch will be plotted
+
 
     :param template: Template image
     :param patch: Patch image
     :param template_key_points: Detected template key points
     :param patch_key_points: Detected patch key points
     :param match: Match between template and patch key points
+    :param merged_image: Merged image to add patch match
+    :param offset_x: Offset x where to add patch
+    :param offset_y: Offset y where to add patch
     """
 
-    # flag if image are 2d or 3d
-    picture2d = (len(template.shape) == 2)
+    # image should be colored (3 dimensions)
+    if len(template.shape) == 2:
+        print("Image should be colored (3d image)")
+        return
+
+    flag_no_merged_img = False
+    if merged_image is None:
+        flag_no_merged_img = True
 
     # extract matched key points from patch
     pt1 = patch_key_points[match[:, 1], :]
     # extract matched key points from template
     pt2 = template_key_points[match[:, 0], :]
 
-    # blank space between template img and patch img
-    blank_space = 10
-    # offset of patch
-    offset_x = template.shape[1] + blank_space
-    offset_y = int(np.round(template.shape[0] / 2))
+    # if we don't pass merged image init merged image
+    if flag_no_merged_img:
+        # blank space between template img and patch img
+        blank_space = 10
+        # offset of patch
+        offset_x = template.shape[1] + blank_space
+        offset_y = int(np.round(template.shape[0] / 2))
 
-    if picture2d:
         # init merge image
-        merged_img = 255 * np.ones((template.shape[0], template.shape[1] + patch.shape[1] + blank_space), dtype=int)
-
+        merged_image = 255 * np.ones((template.shape[0], template.shape[1] + patch.shape[1] + blank_space, 3), dtype=int)
         # merge images
-        merged_img[0:template.shape[0], 0:template.shape[1]] = template
-        merged_img[offset_y:offset_y + patch.shape[0], offset_x:offset_x + patch.shape[1]] = patch
-    else:
-        # init merge image
-        merged_img = 255 * np.ones((template.shape[0], template.shape[1] + patch.shape[1] + blank_space, 3), dtype=int)
+        merged_image[0:template.shape[0], 0:template.shape[1], :] = template
 
-        # merge images
-        merged_img[0:template.shape[0], 0:template.shape[1], :] = template
-        merged_img[offset_y:offset_y + patch.shape[0], offset_x:offset_x + patch.shape[1], :] = patch
+    merged_image[offset_y:offset_y + patch.shape[0], offset_x:offset_x + patch.shape[1], :] = patch
 
     # add offset to patch coordinates
     pt1[:, 0] += offset_x
     pt1[:, 1] += offset_y
 
-    # init figure
-    plt.figure()
-    plt.axis('off')
+    # if merge image is None plot result
+    if flag_no_merged_img:
+        # init figure
+        plt.figure()
+        plt.axis('off')
 
     # draw lines and key points
     thickness = -1
@@ -104,10 +110,7 @@ def show_matched_points(template: np.array, patch: np.array, template_key_points
     radius = 2
 
     # set key points color
-    if picture2d:
-        color = 0
-    else:
-        color = [230, 20, 20]
+    color = [230, 20, 20]
 
     # loop through key points
     for i in np.arange(0, pt1.shape[0]):
@@ -116,14 +119,14 @@ def show_matched_points(template: np.array, patch: np.array, template_key_points
         xp, yp = pt1[i]
 
         # plot matched key points
-        merged_img = cv2.circle(merged_img, (xt, yt), radius, color, thickness)
-        merged_img = cv2.circle(merged_img, (xp, yp), radius, color, thickness)
-        merged_img = cv2.line(merged_img, (xt, yt), (xp, yp), 0, thickness_line)
+        merged_image = cv2.circle(merged_image, (xt, yt), radius, color, thickness)
+        merged_image = cv2.circle(merged_image, (xp, yp), radius, color, thickness)
+        merged_image = cv2.line(merged_image, (xt, yt), (xp, yp), 0, thickness_line)
 
-    # show plotted matched points
-    if picture2d:
-        plt.imshow(merged_img, cmap='gray', vmin=0, vmax=255)
-    else:
-        plt.imshow(merged_img, vmin=0, vmax=255)
+    if flag_no_merged_img:
+        # show plotted matched points
+        plt.imshow(merged_image, vmin=0, vmax=255)
 
-    plt.show()
+        plt.show()
+
+    return merged_image

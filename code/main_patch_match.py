@@ -6,7 +6,7 @@ from patch_matcher.simple_patch_matcher import SimplePatchMatcher
 from utils.glob_def import DATA_DIR, DATA, REPORT_DIR
 from patch_matcher.advance_patch_matcher import AdvancePatchMatcher
 from kpi_calculation.calculate_kpi import CalculateKPI 
-from pach_match_visualisation.match_visualisation import visualise_match
+from pach_match_visualisation.match_visualisation import visualise_match, visualise_match2
 import numpy as np
 import pandas as pd
 
@@ -74,6 +74,17 @@ def visualise_patch_matches(kpi_df: pd.DataFrame, patch_matcher_type: str, num_t
     visualise_match(template, patch_matcher, df_kpi_sample)
 
 
+def visualise_patch_matches2(kpi_df: pd.DataFrame, patch_matcher_type: str, num_to_visualise: int):
+    # get map template image
+    template_image_path = os.path.join(DATA_DIR, "set", "map.png")
+    template = Image.open(template_image_path)
+    # get patch matcher
+    patch_matcher = get_patch_matcher(template, patch_matcher_type)
+    visualise_match2(template, patch_matcher, kpi_df)
+
+    return
+
+
 if __name__ == "__main__":
     """
     Test patch match implementation. 
@@ -86,7 +97,7 @@ if __name__ == "__main__":
     string path_to_report_csv. Number of random sampled patches is defined with num_to_visualise_.
     """
 
-    test_implementation_flag = 2
+    test_implementation_flag = 3
     if test_implementation_flag == 1:
         file_names_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         patch_matcher_type_ = "advanced"
@@ -99,3 +110,10 @@ if __name__ == "__main__":
         patch_matcher_type_ = "advanced"
         num_to_visualise_ = 30
         visualise_patch_matches(df_kpi, patch_matcher_type_, num_to_visualise_)
+
+    elif test_implementation_flag == 3:
+        path_to_report_csv = r"\advance_patch_matcher_" + DATA + r"\1.txt_patch_matched.csv"
+        df_kpi = pd.read_csv(REPORT_DIR + path_to_report_csv)
+        patch_matcher_type_ = "advanced"
+        num_to_visualise_ = 30
+        visualise_patch_matches2(df_kpi, patch_matcher_type_, num_to_visualise_)
