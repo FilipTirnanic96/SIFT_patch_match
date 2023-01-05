@@ -7,8 +7,8 @@ Created on Tue Feb  8 13:44:17 2022
 import os
 from PIL import Image
 import pandas as pd
+import numpy as np
 from patch_matcher.patch_matcher import PatchMatcher
-from patch_matcher.simple_patch_matcher import SimplePatchMatcher
 from kpi_calculation.report import Report
 
 
@@ -63,6 +63,12 @@ class CalculateKPI:
         if len(file_names_number) > 1:
             cumulative_accuracy = cumulative_matched / cumulative_num_patches
             cumulative_time = cumulative_time / cumulative_num_patches
+            # save overall statistics
+            input_stat_df = pd.DataFrame(np.array([[0, 0]]), columns=['accuracy', 'time_taken'])
+            input_stat_df['accuracy'] = cumulative_accuracy
+            input_stat_df['time_taken'] = cumulative_time
+            output_dir = os.path.join(self.report.reports_folder_path, self.report.model_name)
+            input_stat_df.to_csv(os.path.join(output_dir, 'overall_model_statistics.csv'))
             # print overall statistics
             print('Overall Accuracy for n =', cumulative_num_patches, 'processed patches is', cumulative_accuracy)
             print('Overall avg time taken for n =', cumulative_num_patches, 'processed patches is', cumulative_time)
@@ -111,13 +117,7 @@ class CalculateKPI:
                 # read num patches
                 f.readline()
                 # read initial params
-                patch_size_str = f.readline().split()
-                ph = int(patch_size_str[0])
-                pw = int(patch_size_str[1])
-
-                # if we have simple patch matcher we need to calculate new template features for different patch sizes
-                if type(self.patch_matcher_) is SimplePatchMatcher:
-                    self.patch_matcher_ = SimplePatchMatcher(template, pw, ph)
+                f.readline().split()
 
                 # read path to each patch
                 path_to_patch = f.readline()

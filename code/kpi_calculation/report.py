@@ -2,7 +2,7 @@ import os.path
 import shutil
 
 import pandas as pd
-
+import numpy as np
 from utils.glob_def import REPORT_DIR, CONFIG_DIR
 import matplotlib.pyplot as plt
 import matplotlib
@@ -29,6 +29,12 @@ class Report:
         output_dir = os.path.join(self.reports_folder_path, self.model_name)
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
+
+        # init statistics for df
+        input_stat_df = pd.DataFrame(np.array([[0, 0]]), columns=['accuracy', 'time_taken'])
+        input_stat_df['accuracy'] = df[df['matched'] == True].shape[0] / df.shape[0]
+        input_stat_df['time_taken'] = sum(df['time'])
+        input_stat_df.to_csv(os.path.join(output_dir, input_name + '_model_statistics.csv'))
 
         # set matplotlib style
         matplotlib.style.use('ggplot')

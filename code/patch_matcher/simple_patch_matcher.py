@@ -6,7 +6,7 @@ from patch_matcher.patch_matcher_utility import first_and_second_smallest
 
 class SimplePatchMatcher(PatchMatcher):
 
-    def __init__(self, template_img, pw: int, ph: int, verbose: int = 0):
+    def __init__(self, template_img, pw: int = 20, ph: int = 20, verbose: int = 0):
         # init parent constructor
         super().__init__(verbose)
         # preprocess image
@@ -15,16 +15,13 @@ class SimplePatchMatcher(PatchMatcher):
         self.template = template_img
         self.pw = pw
         self.ph = ph
-        if pw != 0 and ph != 0:
-            # extract key points from template
-            self.template_key_points = self.extract_key_points(self.template)
-            # extract template features
-            self.template_features = self.extract_features(self.template_key_points, self.template)
-            # nomalize features
-            self.template_features = self.normalize_features(self.template_features)
-        else:
-            self.template_key_points = []
-            self.template_features = []
+
+        # extract key points from template
+        self.template_key_points = self.extract_key_points(self.template)
+        # extract template features
+        self.template_features = self.extract_features(self.template_key_points, self.template)
+        # nomalize features
+        self.template_features = self.normalize_features(self.template_features)
 
     def extract_key_points(self, image: np.array) -> np.array:
         """
@@ -37,10 +34,15 @@ class SimplePatchMatcher(PatchMatcher):
 
         key_points_list = []
         # iterate through each pixel
-        for y in range(math.floor(self.ph / 2), image.shape[0] - math.floor(self.ph / 2) + 1):
-            for x in range(math.floor(self.pw / 2), image.shape[1] - math.floor(self.pw / 2) + 1):
-                # ad position of pixel as key point
-                key_points_list.append((x, y))
+        if image.shape[0] > 200:
+            # iterate through each pixel
+            for y in range(math.floor(self.ph / 2), image.shape[0] - math.floor(self.ph / 2) + 1):
+                for x in range(math.floor(self.pw / 2), image.shape[1] - math.floor(self.pw / 2) + 1):
+                    # ad position of pixel as key point
+                    key_points_list.append((x, y))
+        else:
+            # take just top left corner of patch
+            key_points_list.append((10, 10))
 
         key_points = np.array(key_points_list)
 
@@ -94,6 +96,7 @@ class SimplePatchMatcher(PatchMatcher):
             # append matched indices
             match.append((i1, i))
 
+        match = np.array(match)
         return match
 
     def find_corresponding_location_of_patch(self, patch_key_points: np.array, match: np.array):

@@ -97,17 +97,17 @@ if __name__ == "__main__":
     string path_to_report_csv. Number of random sampled patches is defined with num_to_visualise_.
     """
 
-    test_implementation_flag = 3
+    test_implementation_flag = 1
     if test_implementation_flag == 1:
         file_names_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         patch_matcher_type_ = "advanced"
-        model_name = "advance_patch_matcher_" + DATA
+        model_name = patch_matcher_type_ + "_patch_matcher_" + DATA
         generate_kpi_reports(file_names_list, patch_matcher_type_, model_name)
 
     elif test_implementation_flag == 2:
         path_to_report_csv = r"\advance_patch_matcher_" + DATA + r"\4.txt_patch_matched.csv"
         df_kpi = pd.read_csv(REPORT_DIR + path_to_report_csv)
-        patch_matcher_type_ = "advanced"
+        patch_matcher_type_ = "simple"
         num_to_visualise_ = 30
         visualise_patch_matches(df_kpi, patch_matcher_type_, num_to_visualise_)
 

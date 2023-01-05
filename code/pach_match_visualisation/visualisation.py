@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def show_key_points(image: np.array, key_points: np.array):
+def show_key_points(image: np.array, key_points: np.array = np.array([])):
     """
     Plots key points on inputs image.
 
@@ -15,8 +15,10 @@ def show_key_points(image: np.array, key_points: np.array):
     # take image copy
     image_copy = image.copy()
 
-    # flag if pic are 2d or 3d
-    picture2d = (len(image_copy.shape) == 2)
+    # image should be colored (3 dimensions)
+    if len(image.shape) == 2:
+        print("Image should be colored (3d image)")
+        return
 
     # plot key points
     plt.figure()
@@ -26,12 +28,7 @@ def show_key_points(image: np.array, key_points: np.array):
     radius = 1
 
     # setup colors
-    if picture2d:
-        # black if picture is gray
-        color = 0
-    else:
-        # red if picture is RGB color
-        color = [230, 20, 20]
+    color = [230, 20, 20]
 
     # loop through key points
     for i in np.arange(0, key_points.shape[0]):
@@ -41,10 +38,7 @@ def show_key_points(image: np.array, key_points: np.array):
         image_copy = cv2.circle(image_copy, (x, y), radius, color, thickness)
 
     # show image with plotted key points
-    if picture2d:
-        plt.imshow(image_copy, cmap='gray', vmin=0, vmax=255)
-    else:
-        plt.imshow(image_copy, vmin=0, vmax=255)
+    plt.imshow(image_copy, vmin=0, vmax=255)
 
     plt.show()
 
