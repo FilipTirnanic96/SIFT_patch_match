@@ -46,7 +46,7 @@ class PatchMatcher(ABC):
         # match nearest neighbour threshold
         self.nn_threshold = config['patch_matcher']['match']['nn_threshold']
 
-    def preprocess(self, image):
+    def preprocess(self, image: np.array):
         """
         Preprocess image
 
@@ -151,7 +151,7 @@ class PatchMatcher(ABC):
 
         pass
 
-    def match_patch(self, patch):
+    def match_patch(self, patch: np.array):
         """
         Finds the location of top left corner of the patch in template image.
         Match the patch location in template image.

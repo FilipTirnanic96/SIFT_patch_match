@@ -99,7 +99,7 @@ def visualise_match2(template: np.array, patch_matcher: PatchMatcher, df: pd.Dat
 
     # get random n patches
     df = df.sample(n = int(max_num_patch))
-    #df = pd.read_csv("./sample_patch_images1.csv")
+
     # for each patch visualise match with template
     for i, path_to_patch in enumerate(df['path']):
         # add patch to bot
