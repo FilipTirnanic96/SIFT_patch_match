@@ -114,7 +114,7 @@ Below we can find table with report statistics for all input files from public a
 </br>
 
 <p align="justify">
-We can see that we miss detect the patch location in most cases when we can find the match of detected points or we just find 1 point to match. This is happening in most cases due to missing of relevant (some specific) information (edge or corner) in input patch. For example it can be that the path just have grass, or water, or tree so in most of the times we don't have key point at all to match that patch. <ins>Some examples of miss detected patch can be found below</ins>:
+From table above we can conclude that <i>AdvancePatchMatcher</i> is working really good. On <b>public (train) data</b> (11200 patches) we got <b>0.91 accuracy</b> and on <b>private (test) data</b> (17300 patches) we got <b>0.864 accuracy</b> score. This also implies that we <b>don't have overfitting</b> to train data. The <b>average time to process the patch</b> is around <b>7 milliseconds</b> which is ok in respect to problem conditions. We can see that we miss detect the patch location in most cases when we can find the match of detected points or we just find 1 point to match. This is happening in most cases due to missing of relevant (some specific) information (edge or corner) in input patch. For example it can be that the path just have grass, or water, or tree so in most of the times we don't have key point at all to match that patch. <ins>Some examples of miss detected patch can be found below</ins>:
 </p>
 
 ![image](https://user-images.githubusercontent.com/24530942/214587612-35d34e93-7ffd-47b3-9038-130779711ee6.png)
