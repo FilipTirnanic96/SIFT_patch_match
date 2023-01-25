@@ -60,7 +60,7 @@ Simple patch matcher is slow and not robust to patch distortion so it will not b
 ## Project architecture <a name="p3"></a>
 
 <p align="justify">
-Project structure can be found in picture below. Modules _kpi_calculation_ and _patch_matcher_ are core modules which are fully implemented using <b>only numpy</b>. Module _patch_matcher_visualisation_ serves or visualization purposes and it <b>has opencv dependency</b>. Folder _reports_ its generated using KPI module and has KPI reports and plots. Script _main_patch_match.py_ is main function and _config folder_ has yaml configuration file. Folders _public_ nad _privite_ contains data used as training and test data. <br/>
+Project structure can be found in picture below. Modules <i>kpi_calculation</i> and <i>patch_matcher</i> are core modules which are fully implemented using <b>only numpy</b>. Module <i>patch_matcher_visualisation</i> serves or visualization purposes and it <b>has opencv dependency</b>. Folder <i>reports</i> its generated using KPI module and has KPI reports and plots. Script <i>main_patch_match.py</i> is main function and <i>config folder</i> has yaml configuration file. Folders <i>public</i> nad <i>privite</i> contains data used as training and test data. These folders can be obtaind just by <b>unzipping private and public 7z files</b>. <br/>
 </p>
 <img src="https://user-images.githubusercontent.com/24530942/213715365-b393fcc1-8eb2-4150-b28e-8ab7a481a0ac.PNG" height="350" width="250">
 	<br/>
