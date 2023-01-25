@@ -87,4 +87,34 @@ For generating example <i>AdvancedPatchMatcher</i> is used. First image is showi
 ![image](https://user-images.githubusercontent.com/24530942/213725690-84daad2c-5eef-481b-bbe7-c90e9d9f0be8.png)<br/>
 
 
-## Patch match results (in progress) <a name="p5"></a>
+## Patch match results <a name="p5"></a>
+
+<p align="justify">
+<i>Report class</i> will create results for each input .txt file. <ins>It creates 3 plots:</ins><br/>
+&emsp;1. &ensp; Detection statistic <br/>
+&emsp;2. &ensp; Histogram of number of matched points for true detected patches <br/>
+&emsp;3. &ensp; Histogram of number of matched points for miss detected patches <br/>
+and <ins>2 csv files:</ins><br/>
+&emsp;1. &ensp; Relevant information about <i>true detected</i> patches <br/>
+&emsp;2. &ensp; Relevant information about <i>miss detected</i> patches <br/>
+<br/>
+<ins>Relevant information</ins> consist of (columns of csv files):<br>
+&emsp;1. &ensp; <b>Path</b> to patch (path) <br/>
+&emsp;2. &ensp; Coordinates of <b>estimated</b> and <b>true</b> left corner patch position in template image ([x_match, y_match],[x_expected, y_expected]) <br/>
+&emsp;3. &ensp; <b>Number of matched points</b> between patch and template (n_points_matched) <br/>
+&emsp;4. &ensp; <b>Time</b> required to match a patch (time) <br/>
+<br/>
+Below we can find table with report statistics for all input files from public and private data got using <i>AdvancedPatchMatcher</i>.</br>
+</p>
+
+![image](https://user-images.githubusercontent.com/24530942/214586993-2ef9bff4-4ceb-4605-a11c-844cd68c27d6.png)
+</br>
+![image](https://user-images.githubusercontent.com/24530942/214587243-c753d34b-ff18-41ac-b0cb-4d2dea20dcaf.png)
+</br>
+</br>
+
+<p align="justify">
+We can see that we miss detect the patch location in most cases when we can find the match of detected points or we just find 1 point to match. This is happening in most cases due to missing of relevant (some specific) information (edge or corner) in input patch. For example it can be that the path just have grass, or water, or tree so in most of the times we don't have key point at all to match that patch. <ins>Some examples of miss detected patch can be found below</ins>:
+</p>
+
+![image](https://user-images.githubusercontent.com/24530942/214587612-35d34e93-7ffd-47b3-9038-130779711ee6.png)
