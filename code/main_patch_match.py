@@ -105,10 +105,10 @@ if __name__ == "__main__":
         generate_kpi_reports(file_names_list, patch_matcher_type_, model_name)
 
     elif test_implementation_flag == 2:
-        path_to_report_csv = r"\advance_patch_matcher_" + DATA + r"\4.txt_patch_matched.csv"
+        path_to_report_csv = r"\advanced_patch_matcher_" + DATA + r"\3.txt_patch_miss_matched.csv"
         df_kpi = pd.read_csv(REPORT_DIR + path_to_report_csv)
-        patch_matcher_type_ = "simple"
-        num_to_visualise_ = 30
+        patch_matcher_type_ = "advanced"
+        num_to_visualise_ = min(30, df_kpi.shape[0])
         visualise_patch_matches(df_kpi, patch_matcher_type_, num_to_visualise_)
 
     elif test_implementation_flag == 3:

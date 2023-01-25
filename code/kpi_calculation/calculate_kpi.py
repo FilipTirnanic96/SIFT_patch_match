@@ -42,6 +42,7 @@ class CalculateKPI:
         cumulative_matched = 0
         cumulative_num_patches = 0
         cumulative_time = 0
+        over_all_df_kpi = pd.DataFrame([], columns = self.df_columns)
         # loop through all inputs
         for file_name_number in file_names_number:
             # calculate kpi for each input
@@ -60,7 +61,10 @@ class CalculateKPI:
             cumulative_num_patches += num_patches_to_process
             cumulative_time += time_taken
 
+            over_all_df_kpi = pd.concat([over_all_df_kpi, df_kpi], ignore_index=True)
+
         if len(file_names_number) > 1:
+            self.report.make_report(over_all_df_kpi, "all_data.txt")
             cumulative_accuracy = cumulative_matched / cumulative_num_patches
             cumulative_time = cumulative_time / cumulative_num_patches
             # save overall statistics

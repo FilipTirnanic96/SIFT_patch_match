@@ -48,6 +48,8 @@ def visualise_match(template: np.array, patch_matcher: PatchMatcher, df: pd.Data
         # check if any key points detected
         if patch_matcher.patch_key_points.size == 0:
             print("No key points detected for patch", path_to_patch)
+            # show key points
+            show_key_points(org_patch, patch_matcher.patch_key_points)
             continue
         # show key points
         show_key_points(org_patch, patch_matcher.patch_key_points)
